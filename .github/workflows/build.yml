@@ -1,0 +1,31 @@
+name: Compile
+on: [push, pull_request]
+
+env:
+  MAKEFLAGS: -j2
+
+jobs:
+  build:
+    runs-on: ${{matrix.os}}
+
+    strategy:
+      matrix:
+        os: [ubuntu-16.04]
+        compiler: [g++, clang++-9]
+        build_type: [Release, Debug]
+
+    steps:
+    - uses: actions/checkout@v2
+    - run: sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+    - run: sudo apt-get update
+    - run: sudo apt-get install g++ build-essential pkg-config cmake libpython-dev python-numpy libboost-all-dev
+    - run: cmake -E make_directory ${{runner.workspace}}/build
+    - name: Configure CMake
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      env:
+        CXX: ${{matrix.compiler}}
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DGTSAM_BUILD_TESTS=OFF -DGTSAM_BUILD_UNSTABLE=OFF -DGTSAM_USE_QUATERNIONS=OFF -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DGTSAM_ALLOW_DEPRECATED_SINCE_V4=OFF -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF -DCMAKE_VERBOSE_MAKEFILE=ON
+    - name: Make
+      working-directory: ${{runner.workspace}}/build
+      run: make -j4
