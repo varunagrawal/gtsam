@@ -98,7 +98,7 @@ cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Release \
     -DGTSAM_ALLOW_DEPRECATED_SINCE_V41=OFF \
     -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/gtsam_install
 
-make -j$(nproc) install &
+make -j$(nproc) install
 
 case $WRAPPER in
 "cython")
