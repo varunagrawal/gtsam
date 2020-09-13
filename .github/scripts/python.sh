@@ -100,13 +100,6 @@ cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Release \
 
 make -j$(nproc) install &
 
-while ps -p $! > /dev/null
-do
-  sleep 60
-  now=$(date +%s)
-  printf "%d seconds have elapsed\n" $(( (now - start) ))
-done
-
 case $WRAPPER in
 "cython")
     cd $GITHUB_WORKSPACE/build/cython
