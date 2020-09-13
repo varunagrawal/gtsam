@@ -47,7 +47,7 @@ jobs:
             version: "9"
 
           - name: macOS-10.15-xcode-11.3.1
-            os: macOS-10.15
+            os: macos-10.15
             compiler: xcode
             version: "11.3.1"
 
