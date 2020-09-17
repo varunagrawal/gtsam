@@ -56,10 +56,6 @@ PATH=$PATH:$($PYTHON -c "import site; print(site.USER_BASE)")/bin
 
 [ "${GTSAM_WITH_TBB:-OFF}" = "ON" ] && install_tbb
 
-
-BUILD_PYTHON="ON"
-TYPEDEF_POINTS_TO_VECTORS="ON"
-
 sudo $PYTHON -m pip install -r $GITHUB_WORKSPACE/python/requirements.txt
 
 mkdir $GITHUB_WORKSPACE/build
@@ -71,14 +67,14 @@ cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
     -DGTSAM_WITH_TBB=${GTSAM_WITH_TBB:-OFF} \
     -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
     -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
-    -DGTSAM_BUILD_PYTHON=${BUILD_PYTHON} \
-    -DGTSAM_TYPEDEF_POINTS_TO_VECTORS=${TYPEDEF_POINTS_TO_VECTORS} \
+    -DGTSAM_BUILD_PYTHON=ON \
     -DGTSAM_PYTHON_VERSION=$PYTHON_VERSION \
     -DPYTHON_EXECUTABLE:FILEPATH=$(which $PYTHON) \
     -DGTSAM_ALLOW_DEPRECATED_SINCE_V41=OFF \
     -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/gtsam_install
 
-make -j$(nproc) install
+# Set to 2 cores so that Actions does not error out during resource provisioning.
+make -j2 install
 
 cd $GITHUB_WORKSPACE/build/python
 $PYTHON setup.py install --user --prefix=
