@@ -9,10 +9,10 @@ tar -zxf ${BOOST_FOLDER}.tar.gz
 
 # Bootstrap
 cd ${BOOST_FOLDER}/
-./bootstrap.sh
+./bootstrap.sh --prefix=$CURRDIR/boost_install --with-libraries=serialization,filesystem,thread,system,atomic,date_time,timer,chrono,program_options,regex
 
 # Build and install
-sudo ./b2 install
+sudo ./b2 -j$(sysctl -n hw.logicalcpu) install
 
 # Rebuild ld cache
 sudo ldconfig
