@@ -97,4 +97,6 @@ jobs:
           cmake --build build --target gtsam
           cmake --build build --target gtsam_unstable
           cmake --build build --target wrap
-          cmake --build build --target check
+          cmake --build build --target check.base
+          cmake --build build --target check.base_unstable
+          cmake --build build --target check.linear
