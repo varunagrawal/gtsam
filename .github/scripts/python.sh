@@ -47,9 +47,11 @@ PYTHON="python${PYTHON_VERSION}"
 
 if [[ $(uname) == "Darwin" ]]; then
     brew install wget
+    export MAKE_J=$(sysctl -n hw.physicalcpu)
 else
     # Install a system package required by our library
     sudo apt-get install -y wget libicu-dev python3-pip python3-setuptools
+    export MAKE_J=$(nproc)
 fi
 
 PATH=$PATH:$($PYTHON -c "import site; print(site.USER_BASE)")/bin
@@ -78,9 +80,7 @@ cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
     -DGTSAM_ALLOW_DEPRECATED_SINCE_V41=OFF \
     -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/gtsam_install
 
-
-# Set to 2 cores so that Actions does not error out during resource provisioning.
-make -j2 install
+make -j$MAKE_J install
 
 cd $GITHUB_WORKSPACE/build/python
 $PYTHON setup.py install --user --prefix=
