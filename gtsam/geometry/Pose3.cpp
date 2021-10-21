@@ -71,18 +71,19 @@ Vector6 Pose3::Adjoint(const Vector6& xi_b, OptionalJacobian<6, 6> H_pose,
   //                      [t]R  R ]      v]
   // Declarations, aliases, and intermediate Jacobians easy to compute now
   Vector6 result; // = AdjointMap() * xi
-  auto Rw = result.head<3>();
-  const auto &w = xi_b.head<3>(), &v = xi_b.tail<3>();
+  const Vector3 w = xi_b.head<3>(), v = xi_b.tail<3>();
   Matrix3 Rw_H_R, Rv_H_R, pRw_H_Rw;
   const Matrix3 R = R_.matrix();
-  const Matrix3 &Rw_H_w = R;
-  const Matrix3 &Rv_H_v = R;
+  const Matrix3 Rw_H_w = R;
+  const Matrix3 Rv_H_v = R;
 
   // Calculations
-  Rw = R_.rotate(w, H_pose ? &Rw_H_R : nullptr /*, Rw_H_w */);
+  Vector3 Rw = R_.rotate(w, H_pose ? &Rw_H_R : nullptr /*, Rw_H_w */);
   const Vector3 Rv = R_.rotate(v, H_pose ? &Rv_H_R : nullptr /*, Rv_H_v */);
-  const Vector3 pRw = cross(t_, Rw, boost::none /* pRw_H_t */, pRw_H_Rw);
-  result.tail<3>() = pRw + Rv;
+  const Vector3 pRw =
+      cross(t_, Rw, boost::none /* pRw_H_t */, H_pose ? &pRw_H_Rw : nullptr);
+
+  result << Rw, pRw + Rv;
 
   // Jacobians
   if (H_pose) {
@@ -113,22 +114,23 @@ Vector6 Pose3::AdjointTranspose(const Vector6& x, OptionalJacobian<6, 6> H_pose,
   //                         0     R^T ]       v]
   // Declarations, aliases, and intermediate Jacobians easy to compute now
   Vector6 result; // = AdjointMap().transpose() * x
-  const Vector3 &w = x.head<3>(), &v = x.tail<3>();
-  auto Rv = result.tail<3>();
+  const Vector3 w = x.head<3>(), v = x.tail<3>();
   Matrix3 Rw_H_R, Rv_H_R, Rtv_H_R;
   const Matrix3 Rtranspose = R_.matrix().transpose();
-  const Matrix3 &Rw_H_w = Rtranspose;
-  const Matrix3 &Rv_H_v = Rtranspose;
-  const Matrix3 &Rtv_H_tv = Rtranspose;
-  const Matrix3 tv_H_v = skewSymmetric(t_);
+  const Matrix3 Rw_H_w = Rtranspose;
+  const Matrix3 Rv_H_v = Rtranspose;
+  const Matrix3 Rtv_H_tv = Rtranspose;
+  Matrix3 tv_H_v = skewSymmetric(t_);
 
   // Calculations
   const Vector3 Rw = R_.unrotate(w, H_pose ? &Rw_H_R : nullptr /*, Rw_H_w */);
-  Rv = R_.unrotate(v, H_pose ? &Rv_H_R : nullptr /*, Rv_H_v */);
-  const Vector3 tv = cross(t_, v, boost::none /* tv_H_t */, tv_H_v);
+  Vector3 Rv = R_.unrotate(v, H_pose ? &Rv_H_R : nullptr /*, Rv_H_v */);
+  const Vector3 tv =
+      cross(t_, v, boost::none /* tv_H_t */, H_pose ? &tv_H_v : nullptr);
   const Vector3 Rtv =
       R_.unrotate(tv, H_pose ? &Rtv_H_R : nullptr /*, Rtv_H_tv */);
-  result.head<3>() = Rw - Rtv;
+
+  result << Rw - Rtv, Rv;
 
   // Jacobians
   if (H_pose) {
