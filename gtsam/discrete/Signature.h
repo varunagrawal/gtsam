@@ -30,7 +30,7 @@ namespace gtsam {
    * The format is (Key % string) for nodes with no parents,
    * and (Key | Key, Key = string) for nodes with parents.
    *
-   * The string specifies a conditional probability table in 00 01 10 11 order.
+   * The string specifies a conditional probability table (CPT) in 00 01 10 11 order.
    * For three-valued, it would be 00 01 02 10 11 12 20 21 22, etc...
    *
    * For example, given the following keys

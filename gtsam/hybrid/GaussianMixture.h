@@ -21,6 +21,7 @@
 
 #include <gtsam/discrete/DecisionTree.h>
 #include <gtsam/discrete/DiscreteKey.h>
+#include <gtsam/discrete/Signature.h>
 #include <gtsam/hybrid/DCGaussianMixtureFactor.h>
 #include <gtsam/inference/Conditional.h>
 #include <gtsam/linear/GaussianConditional.h>
@@ -37,6 +38,11 @@ namespace gtsam {
 class GaussianMixture
     : public DCGaussianMixtureFactor,
       public Conditional<DCGaussianMixtureFactor, GaussianMixture> {
+ protected:
+  /// The final probability decision tree after all the continuous variables
+  /// have been eliminated.
+  AlgebraicDecisionTree<Key> probTree_;
+
  public:
   using This = GaussianMixture;
   using shared_ptr = boost::shared_ptr<This>;
@@ -68,12 +74,38 @@ class GaussianMixture
                   const DiscreteKeys& discreteKeys,
                   const Conditionals& conditionals);
 
+  GaussianMixture(size_t nrFrontals, const DiscreteKeys& discreteKeys,
+                  const AlgebraicDecisionTree<Key>& adt)
+      : BaseFactor(KeyVector(), discreteKeys,
+                   std::vector<GaussianFactor::shared_ptr>()),
+        BaseConditional(nrFrontals),
+        probTree_(adt) {}
+
+  //TODO(Varun) Get working!
+  // /** Construct from signature */
+  // GaussianMixture(const DiscreteKeys& keys, const DiscreteKeys& parents,
+  //                 const Signature& signature)
+  //     : GaussianMixture(1, keys, parents,
+  //                       AlgebraicDecisionTree<Key>(signature.discreteKeys(),
+  //                                                  signature.cpt())) {}
+
+  // GaussianMixture(const DiscreteKey& key, const DiscreteKeys& parents,
+  //                 const Signature::Table& table)
+  //     : GaussianMixture(key, parents, Signature(key, parents, table)) {
+  //   this->print("Constructed");
+  // }
+
   /// @}
   /// @name Standard API
   /// @{
 
   GaussianConditional::shared_ptr operator()(
       const DiscreteValues& discreteVals) const;
+
+  /// Return the final discrete probability given a discrete value assignment.
+  double choose(const DiscreteValues& discreteVals) const {
+    return probTree_(discreteVals);
+  }
 
   /// Returns the total number of continuous components
   size_t nrComponents() {

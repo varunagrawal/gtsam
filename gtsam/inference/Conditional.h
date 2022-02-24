@@ -20,7 +20,7 @@
 
 #include <boost/range.hpp>
 
-#include <gtsam/inference/AbstractConditional.h>
+#include <gtsam/inference/Factor.h>
 #include <gtsam/inference/Key.h>
 
 namespace gtsam {
@@ -34,23 +34,32 @@ namespace gtsam {
  * SymbolicConditional and GaussianConditional for examples.
  * \nosubgrouping
  */
-template<class FACTOR, class DERIVEDCONDITIONAL>
-class Conditional : public AbstractConditional {
-
+template <class FACTOR, class DERIVEDCONDITIONAL>
+class Conditional {
  private:
   /// Typedef to this class
   typedef Conditional<FACTOR, DERIVEDCONDITIONAL> This;
 
+ public:
+  /** View of the frontal keys (call frontals()) */
+  typedef boost::iterator_range<typename FACTOR::const_iterator> Frontals;
+
+  /** View of the separator keys (call parents()) */
+  typedef boost::iterator_range<typename FACTOR::const_iterator> Parents;
+
  protected:
+
+  /** The first nrFrontal variables are frontal and the rest are parents. */
+  size_t nrFrontals_;
 
   /// @name Standard Constructors
   /// @{
 
   /** Empty Constructor to make serialization possible */
-  Conditional() {}
+  Conditional(): nrFrontals_(0) {}
 
   /** Constructor */
-  Conditional(size_t nrFrontals) : AbstractConditional(nrFrontals) {}
+  Conditional(size_t nrFrontals) : nrFrontals_(nrFrontals) {}
 
   /// @}
 
@@ -60,11 +69,11 @@ class Conditional : public AbstractConditional {
 
   /** print with optional formatter */
   void print(const std::string &s = "Conditional",
-             const KeyFormatter &formatter = DefaultKeyFormatter) const override;
+             const KeyFormatter &formatter = DefaultKeyFormatter) const;
 
   /** check equality */
   bool equals(const This &c, double tol = 1e-9) const {
-    return AbstractConditional::equals(c, tol);
+    return nrFrontals_ == c.nrFrontals_;;
   }
 
   /// @}
@@ -72,8 +81,11 @@ class Conditional : public AbstractConditional {
   /// @name Standard Interface
   /// @{
 
+  /** return the number of frontals */
+  size_t nrFrontals() const { return nrFrontals_; }
+
   /** return the number of parents */
-  size_t nrParents() const override { return asFactor().size() - nrFrontals_; }
+  size_t nrParents() const { return asFactor().size() - nrFrontals_; }
 
   /** Convenience function to get the first frontal key */
   Key firstFrontalKey() const {
@@ -85,15 +97,14 @@ class Conditional : public AbstractConditional {
   }
 
   /** return a view of the frontal keys */
-  Frontals frontals() const override {
+  Frontals frontals() const {
     return boost::make_iterator_range(beginFrontals(),
                                       endFrontals());
   }
 
   /** return a view of the parent keys */
-  Parents parents() const override {
-    return boost::make_iterator_range(beginParents(),
-                                      endParents());
+  Parents parents() const {
+    return boost::make_iterator_range(beginParents(), endParents());
   }
 
   /** Iterator pointing to first frontal key. */
@@ -113,6 +124,9 @@ class Conditional : public AbstractConditional {
   /// @}
   /// @name Advanced Interface
   /// @{
+
+  /** Mutable version of nrFrontals */
+  size_t& nrFrontals() { return nrFrontals_; }
 
   /** Mutable iterator pointing to first frontal key. */
   typename FACTOR::iterator beginFrontals() { return asFactor().begin(); }
@@ -145,7 +159,6 @@ class Conditional : public AbstractConditional {
   }
 
   /// @}
-
 };
 
 } // gtsam

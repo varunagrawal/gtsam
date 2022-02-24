@@ -95,7 +95,9 @@ void GaussianMixture::print(const std::string &s,
     return (boost::format(format_template) % v->size() % printCapture(v)).str();
   };
 
-  factors_.print("", keyFormatter, valueFormatter);
+  if (!factors_.empty()) {
+    factors_.print("", keyFormatter, valueFormatter);
+  }
   std::cout << "}\n";
 }
 

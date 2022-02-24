@@ -35,11 +35,11 @@ namespace gtsam {
  * A hybrid Bayes net can have discrete conditionals, Gaussian mixtures,
  * or pure Gaussian conditionals.
  */
-class GTSAM_EXPORT HybridBayesNet : public BayesNet<AbstractConditional> {
+class GTSAM_EXPORT HybridBayesNet : public BayesNet<GaussianMixture> {
  public:
-  using Base = BayesNet<AbstractConditional>;
+  using Base = BayesNet<GaussianMixture>;
   using This = HybridBayesNet;
-  using ConditionalType = AbstractConditional;
+  using ConditionalType = GaussianMixture;
   using shared_ptr = boost::shared_ptr<HybridBayesNet>;
   using sharedConditional = boost::shared_ptr<ConditionalType>;
 
@@ -47,9 +47,9 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<AbstractConditional> {
   HybridBayesNet() : Base() {}
 
   void add(const DiscreteKey &key, const std::string &table) {
-    DiscreteConditional dc(key, table);
-    // TODO(fan): implement this method
-    push_back(dc);
+    GaussianMixture discrete(key, DiscreteKeys(),
+                             Signature(key, DiscreteKeys(), table));
+    push_back(discrete);
   }
 
   /**

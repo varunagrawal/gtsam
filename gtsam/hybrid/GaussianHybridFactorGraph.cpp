@@ -101,9 +101,8 @@ ostream& operator<<(ostream& os,
 }
 
 // The function type that does a single elimination step on a variable.
-pair<AbstractConditional::shared_ptr, boost::shared_ptr<Factor>>
-EliminateHybrid(const GaussianHybridFactorGraph& factors,
-                const Ordering& ordering) {
+pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
+    const GaussianHybridFactorGraph& factors, const Ordering& ordering) {
   // STEP 1: SUM
   // Create a new decision tree with all factors gathered at leaves.
   Sum sum = factors.sum();
@@ -125,9 +124,15 @@ EliminateHybrid(const GaussianHybridFactorGraph& factors,
     dfg.push_back(factors.discreteGraph());
 
     auto dbn = EliminateForMPE(dfg, ordering);
-    auto& df = dbn.first;
-    auto& newFactor = dbn.second;
-    return {df, newFactor};
+    DiscreteConditional::shared_ptr df = dbn.first;
+
+    DiscreteKeys dKeys;
+    for(auto&& key: df->keys()) {
+      dKeys.push_back(DiscreteKey(key, df->cardinality(key)));
+    }
+    DecisionTreeFactor::shared_ptr newFactor = dbn.second;
+    auto discrete = boost::make_shared<GaussianMixture>(df->nrFrontals(), dKeys, *df);
+    return {discrete, newFactor};
   }
 
   sum = Sum(sum, zeroOut);

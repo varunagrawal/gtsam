@@ -301,7 +301,7 @@ TEST(DCGaussianElimination, Eliminate_x2) {
   Ordering ordering;
   ordering += X(2);
 
-  std::pair<AbstractConditional::shared_ptr, boost::shared_ptr<Factor>> result =
+  std::pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> result =
       EliminateHybrid(factors, ordering);
   CHECK(result.first);
   EXPECT_LONGS_EQUAL(1, result.first->nrFrontals());
@@ -345,7 +345,7 @@ TEST(DCGaussianElimination, EliminateHybrid_2_Variable) {
   ordering += X(1);
   ordering += X(2);
 
-  AbstractConditional::shared_ptr abstractConditionalMixture;
+  GaussianMixture::shared_ptr abstractConditionalMixture;
   boost::shared_ptr<Factor> factorOnModes;
   std::tie(abstractConditionalMixture, factorOnModes) =
       EliminateHybrid(factors, ordering);
