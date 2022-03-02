@@ -143,8 +143,10 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
 
     // Loop over all assignments and create a vector of GaussianConditionals
     std::vector<GaussianMixture::shared_ptr> lastClique;
-    lastClique.push_back(lastDensity);
-    lastClique.push_back(hybridBayesNet_.atGaussian(hybridBayesNet_.size()-2));
+    for (size_t i = 0; i < hybridBayesNet_.size(); i++) {
+      auto ptr = boost::dynamic_pointer_cast<GaussianMixture>(hybridBayesNet_.at(i));
+      if (ptr) lastClique.push_back(ptr);
+    }
     for (auto &p : lastClique) {
       std::vector<GaussianFactor::shared_ptr> prunedConditionals;
       for (auto &&av : assignments) {
@@ -157,6 +159,9 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
           prunedConditionals.emplace_back(p->operator()(assignment));
         }
       }
+
+//      p->print();
+      if (p->discreteKeys().size() != prunedConditionals.size()) continue;
 
       GaussianMixture::Factors prunedConditionalsTree(p->discreteKeys(),
                                                       prunedConditionals);

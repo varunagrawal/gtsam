@@ -331,7 +331,7 @@ using symbol_shorthand::Z;
 /* ************************************************************************* */
 /* Test for figuring out the optimal ordering to ensure we get a discrete graph
  * after elimination. */
-TEST(IncrementalHybrid, NonTrivial) {
+TEST_UNSAFE(IncrementalHybrid, NonTrivial) {
   NonlinearHybridFactorGraph fg;
 
   // Add a prior on pose x1 at the origin. A prior factor consists of a mean and
