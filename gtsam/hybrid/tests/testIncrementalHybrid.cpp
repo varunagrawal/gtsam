@@ -338,7 +338,7 @@ TEST(IncrementalHybrid, NonTrivial) {
   // a noise model (covariance matrix)
   Pose2 prior(0.0, 0.0, 0.0);  // prior mean is at origin
   auto priorNoise = noiseModel::Diagonal::Sigmas(
-      Vector3(0.3, 0.3, 0.1));  // 30cm std on x,y, 0.1 rad on theta
+      Vector3(0.1, 0.1, 0.1));  // 30cm std on x,y, 0.1 rad on theta
   fg.emplace_nonlinear<PriorFactor<Pose2>>(X(0), prior, priorNoise);
 
   // create a noise model for the landmark measurements
@@ -368,9 +368,9 @@ TEST(IncrementalHybrid, NonTrivial) {
   IncrementalHybrid inc;
 
   Ordering ordering;
+  ordering += W(0);
   ordering += Z(0);
   ordering += Y(0);
-  ordering += W(0);
   ordering += X(0);
 
   inc.update(gfg, ordering);
@@ -380,7 +380,7 @@ TEST(IncrementalHybrid, NonTrivial) {
   // Add odometry factor
   Pose2 odometry(1.0, 0.0, 0.0);
   KeyVector contKeys = {W(0), W(1)};
-  auto noise_model = noiseModel::Isotropic::Sigma(3, 1.0);
+  auto noise_model = noiseModel::Isotropic::Sigma(3, 0.1);
   auto still = boost::make_shared<PlanarMotionModel>(W(0), W(1), Pose2(0, 0, 0),
                                                      noise_model),
        moving = boost::make_shared<PlanarMotionModel>(W(0), W(1), odometry,
@@ -391,7 +391,7 @@ TEST(IncrementalHybrid, NonTrivial) {
   fg.push_back(dcFactor);
 
   // Add equivalent of ImuFactor
-  fg.emplace_nonlinear<BetweenFactor<Pose2>>(X(0), X(1), Pose2(1.0, 0.0, 0),
+  fg.emplace_nonlinear<BetweenFactor<Pose2>>(X(0), X(1), Pose2(0.0, 0.0, 0),
                                              poseNoise);
   // PoseFactors-like at k=1
   fg.emplace_nonlinear<BetweenFactor<Pose2>>(X(1), Y(1), Pose2(0, 1, 0),
@@ -411,10 +411,12 @@ TEST(IncrementalHybrid, NonTrivial) {
   // e.g. X) should be eliminated first.
   ordering = Ordering();
   ordering += W(0);
+  ordering += Z(0);
+  ordering += Y(0);
   ordering += X(0);
+  ordering += W(1);
   ordering += Z(1);
   ordering += Y(1);
-  ordering += W(1);
   ordering += X(1);
 
   gfg = fg.linearize(initial);
@@ -453,10 +455,12 @@ TEST(IncrementalHybrid, NonTrivial) {
   // Ordering at k=2. Same idea as before.
   ordering = Ordering();
   ordering += W(1);
+  ordering += Z(1);
+  ordering += Y(1);
   ordering += X(1);
+  ordering += W(2);
   ordering += Z(2);
   ordering += Y(2);
-  ordering += W(2);
   ordering += X(2);
 
   gfg = fg.linearize(initial);
@@ -497,10 +501,12 @@ TEST(IncrementalHybrid, NonTrivial) {
   // Ordering at k=3. Same idea as before.
   ordering = Ordering();
   ordering += W(2);
+  ordering += Z(2);
+  ordering += Y(2);
   ordering += X(2);
+  ordering += W(3);
   ordering += Z(3);
   ordering += Y(3);
-  ordering += W(3);
   ordering += X(3);
 
   gfg = fg.linearize(initial);
