@@ -616,6 +616,41 @@ namespace gtsam {
   }
 
   /****************************************************************************/
+  template <typename L, typename Y>
+  template <typename M, typename X>
+  typename DecisionTree<L, Y>::NodePtr DecisionTree<L, Y>::convertFrom(
+      const typename DecisionTree<M, X>::NodePtr& f,
+      std::function<L(const M&)> L_of_M,
+      std::function<Y(const M&, const X&)> Y_of_MX, boost::optional<L&> label) const {
+    using LY = DecisionTree<L, Y>;
+
+    // ugliness below because apparently we can't have templated virtual
+    // functions
+    // If leaf, apply unary conversion "op" and create a unique leaf
+    using MXLeaf = typename DecisionTree<M, X>::Leaf;
+    if (auto leaf = boost::dynamic_pointer_cast<const MXLeaf>(f)) {
+      return NodePtr(new Leaf(Y_of_MX(leaf->constant(), label)));
+    }
+
+    // Check if Choice
+    using MXChoice = typename DecisionTree<M, X>::Choice;
+    auto choice = boost::dynamic_pointer_cast<const MXChoice>(f);
+    if (!choice) throw std::invalid_argument(
+          "DecisionTree::convertFrom: Invalid NodePtr");
+
+    // get new label
+    const M oldLabel = choice->label();
+    const L newLabel = L_of_M(oldLabel);
+
+    // put together via Shannon expansion otherwise not sorted.
+    std::vector<LY> functions;
+    for (auto&& branch : choice->branches()) {
+      functions.emplace_back(convertFrom<M, X>(branch, L_of_M, Y_of_MX, branch));
+    }
+    return LY::compose(functions.begin(), functions.end(), newLabel);
+  }
+
+  /****************************************************************************/
   // Functor performing depth-first visit without Assignment<L> argument.
   template <typename L, typename Y>
   struct Visit {

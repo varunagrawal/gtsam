@@ -144,36 +144,58 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
     // Loop over all assignments and create a vector of GaussianConditionals
     std::vector<GaussianMixture::shared_ptr> lastClique;
     for (size_t i = 0; i < hybridBayesNet_.size(); i++) {
-      auto ptr = boost::dynamic_pointer_cast<GaussianMixture>(hybridBayesNet_.at(i));
+      auto ptr =
+          boost::dynamic_pointer_cast<GaussianMixture>(hybridBayesNet_.at(i));
       if (ptr) lastClique.push_back(ptr);
     }
+
     for (auto &p : lastClique) {
+      std::vector<Assignment<Key>> prunedAssignments;
       std::vector<GaussianFactor::shared_ptr> prunedConditionals;
+      std::vector<int> buffer;
+      auto shouldPrune = DecisionTree<Key, int *>(p->factors_,
+                                                  [&buffer](const GaussianFactor::shared_ptr &p) {
+                                                    buffer.push_back(1);
+                                                    return &(buffer[
+                                                        buffer.size() - 1]);
+                                                  });
       for (auto &&av : assignments) {
         const DiscreteValues &assignment = av.first;
         const double value = av.second;
 
         if (value == 0.0) {
-          prunedConditionals.emplace_back(nullptr);
+//          prunedConditionals.emplace_back(nullptr);
         } else {
-          prunedConditionals.emplace_back(p->operator()(assignment));
+//          prunedConditionals.emplace_back(p->operator()(assignment));
+          *(shouldPrune(assignment)) = 0;
         }
       }
 
-//      p->print();
-      if (p->discreteKeys().size() != prunedConditionals.size()) continue;
+      shouldPrune.print("shouldPrune", DefaultKeyFormatter, [](const int* i) { return std::to_string(*i); });
 
-      GaussianMixture::Factors prunedConditionalsTree(p->discreteKeys(),
-                                                      prunedConditionals);
-
-      p->factors_ =
-          prunedConditionalsTree;
-
-      p->factors_.print("", DefaultKeyFormatter, [](GaussianFactor::shared_ptr p){
-        RedirectCout rd;
-        if (p) p->print();
-        return rd.str();
+      p->factors_.visitWith([&](const Assignment<Key> &as,
+                                const GaussianFactor::shared_ptr &p) {
+        prunedAssignments.push_back(as);
+        if (*(shouldPrune(as)) == 0) prunedConditionals.push_back(p);
+        else prunedConditionals.push_back(nullptr);
       });
+
+//      p->print();
+//      if (p->discreteKeys().size() != prunedConditionals.size()) continue;
+//
+//      GaussianMixture::Factors prunedConditionalsTree(prunedAssignments,
+//                                                      prunedConditionals);
+
+//      p->factors_ =
+//          prunedConditionalsTree;
+
+      p->factors_.print("",
+                        DefaultKeyFormatter,
+                        [](GaussianFactor::shared_ptr p) {
+                          RedirectCout rd;
+                          if (p) p->print();
+                          return rd.str();
+                        });
     }
   }
   tictoc_print_();

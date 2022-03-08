@@ -23,6 +23,7 @@
 #include <gtsam/discrete/Assignment.h>
 
 #include <boost/function.hpp>
+#include <boost/optional.hpp>
 #include <functional>
 #include <iostream>
 #include <map>
@@ -139,6 +140,12 @@ namespace gtsam {
     NodePtr convertFrom(const typename DecisionTree<M, X>::NodePtr& f,
                         std::function<L(const M&)> L_of_M,
                         std::function<Y(const X&)> Y_of_X) const;
+
+    template <typename M, typename X>
+    NodePtr convertFrom(
+        const typename DecisionTree<M, X>::NodePtr& f,
+        std::function<L(const M&)> L_of_M,
+        std::function<Y(const M&, const X&)> Y_of_MX, boost::optional<L&> label = boost::none) const;
 
    public:
     /// @name Standard Constructors
