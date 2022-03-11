@@ -28,8 +28,51 @@ namespace gtsam {
 void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
                                const Ordering &ordering,
                                boost::optional<size_t> maxNrLeaves) {
-  // if we are not at the first iteration
-  if (!hybridBayesNet_.empty()) {
+  std::tie(graph, hybridBayesNet_) = addConditionals(graph, hybridBayesNet_, ordering);
+
+  gttic_(Elimination);
+  // Eliminate partially.
+  HybridBayesNet::shared_ptr bayesNetFragment;
+  auto result = graph.eliminatePartialSequential(ordering);
+  bayesNetFragment = result.first;
+  remainingFactorGraph_ = *result.second;
+
+  gttoc_(Elimination);
+
+  // Prune
+  if (maxNrLeaves) {
+    // Check if discreteGraph is empty. Possible if no discrete variables.
+    if (!remainingFactorGraph_.discreteGraph().empty()) {
+      auto discreteFactor = boost::dynamic_pointer_cast<DecisionTreeFactor>(
+          remainingFactorGraph_.discreteGraph().at(0));
+
+      discreteFactor = prune(discreteFactor, *maxNrLeaves);
+
+      // Propagate pruning to gaussian mixtures
+      HybridBayesNet::shared_ptr prunedBayesNetFragment =
+          pruneBayesNet(bayesNetFragment, discreteFactor);
+      // Set the bayes net fragment to the pruned version
+      bayesNetFragment = prunedBayesNetFragment;
+    }
+  }
+
+  // Add the partial bayes net to the posterior bayes net.
+  hybridBayesNet_.push_back<HybridBayesNet>(*bayesNetFragment);
+
+  tictoc_print_();
+}
+
+/* ************************************************************************* */
+std::pair<GaussianHybridFactorGraph, HybridBayesNet>
+IncrementalHybrid::addConditionals(
+    const GaussianHybridFactorGraph &originalGraph,
+    const HybridBayesNet &originalHybridBayesNet,
+    const Ordering &ordering) const {
+  GaussianHybridFactorGraph graph(originalGraph);
+  HybridBayesNet hybridBayesNet(originalHybridBayesNet);
+
+  // If we are not at the first iteration
+  if (!hybridBayesNet.empty()) {
     // We add all relevant conditional mixtures on the last continuous variable
     // in the previous `hybridBayesNet` to the graph
     std::unordered_set<Key> allVars(ordering.begin(), ordering.end());
@@ -40,8 +83,8 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
 
     // TODO(Varun) Using a for-range loop doesn't work since some of the
     // conditionals are invalid pointers
-    for (size_t i = 0; i < hybridBayesNet_.size(); i++) {
-      auto conditional = hybridBayesNet_.at(i);
+    for (size_t i = 0; i < hybridBayesNet.size(); i++) {
+      auto conditional = hybridBayesNet.at(i);
 
       for (auto &key : conditional->frontals()) {
         if (allVars.find(key) != allVars.end()) {
@@ -66,48 +109,19 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
     // Remove conditionals at the end so we don't affect the order in the
     // original bayes net.
     for (auto &&conditional : conditionals_to_erase) {
-      auto it =
-          find(hybridBayesNet_.begin(), hybridBayesNet_.end(), conditional);
-      hybridBayesNet_.erase(it);
+      auto it = find(hybridBayesNet.begin(), hybridBayesNet.end(), conditional);
+      hybridBayesNet.erase(it);
     }
   }
-
-  gttic_(Elimination);
-  // Eliminate partially.
-  HybridBayesNet::shared_ptr bayesNetFragment;
-  auto result = graph.eliminatePartialSequential(ordering);
-  bayesNetFragment = result.first;
-  remainingFactorGraph_ = *result.second;
-
-  gttoc_(Elimination);
-
-  // Prune
-  if (maxNrLeaves) {
-    DecisionTreeFactor::shared_ptr discreteFactor = prune(*maxNrLeaves);
-
-    // If valid pruned discrete factor, then propagate to gaussian mixtures
-    if (discreteFactor) {
-      HybridBayesNet::shared_ptr prunedBayesNetFragment = pruneBayesNet(bayesNetFragment, discreteFactor);
-      // Set the bayes net fragment to the pruned version
-      bayesNetFragment = prunedBayesNetFragment;
-    }
-  }
-
-  // Add the partial bayes net to the posterior bayes net.
-  hybridBayesNet_.push_back<HybridBayesNet>(*bayesNetFragment);
-
-  tictoc_print_();
+  return std::make_pair(graph, hybridBayesNet);
 }
 
+/* ************************************************************************* */
 // TODO(Varun) Move to DecisionTreeFactor.h
-DecisionTreeFactor::shared_ptr IncrementalHybrid::prune(size_t maxNrLeaves) {
+DecisionTreeFactor::shared_ptr IncrementalHybrid::prune(
+    const DecisionTreeFactor::shared_ptr &discreteFactor,
+    size_t maxNrLeaves) const {
   const auto N = maxNrLeaves;
-
-  // Check if discreteGraph is empty. Possible if no discrete variables.
-  if (remainingFactorGraph_.discreteGraph().empty()) return nullptr;
-
-  auto discreteFactor = boost::dynamic_pointer_cast<DecisionTreeFactor>(
-      remainingFactorGraph_.discreteGraph().at(0));
 
   // Let's assume that the structure of the last discrete density will be the
   // same as the last continuous
@@ -138,12 +152,11 @@ DecisionTreeFactor::shared_ptr IncrementalHybrid::prune(size_t maxNrLeaves) {
   std::cout << "Initial number of leaves: " << discreteFactor->nrLeaves()
             << std::endl;
 
-  // Assign the thresholded tree. Imperative :-(
-  discreteFactor->root_ = thresholded.root_;
-
-  return discreteFactor;
+  return boost::make_shared<DecisionTreeFactor>(discreteFactor->discreteKeys(),
+                                                thresholded);
 }
 
+/* ************************************************************************* */
 HybridBayesNet::shared_ptr IncrementalHybrid::pruneBayesNet(
     const HybridBayesNet::shared_ptr &bayesNetFragment,
     const DecisionTreeFactor::shared_ptr &discreteFactor) const {

@@ -51,12 +51,27 @@ class IncrementalHybrid {
               boost::optional<size_t> maxNrLeaves = boost::none);
 
   /**
+   * @brief Add conditionals from previous timestep as part of liquefication.
+   *
+   * @param graph The new factor graph for the current time step.
+   * @param hybridBayesNet The hybrid bayes net containing all conditionals so far.
+   * @param ordering The elimination ordering.
+   * @return std::pair<GaussianHybridFactorGraph, HybridBayesNet>
+   */
+  std::pair<GaussianHybridFactorGraph, HybridBayesNet> addConditionals(
+      const GaussianHybridFactorGraph& graph,
+      const HybridBayesNet& hybridBayesNet,
+      const Ordering& ordering) const;
+
+  /**
    * @brief Method to prune the decision tree of discrete variables.
    *
    * @param maxNrLeaves The maximum number of leaves to keep.
-   * @return DecisionTreeFactor::shared_ptr 
+   * @return DecisionTreeFactor::shared_ptr
    */
-  DecisionTreeFactor::shared_ptr prune(size_t maxNrLeaves);
+  DecisionTreeFactor::shared_ptr prune(
+      const DecisionTreeFactor::shared_ptr& discreteFactor,
+      size_t maxNrLeaves) const;
 
   HybridBayesNet::shared_ptr pruneBayesNet(
       const HybridBayesNet::shared_ptr& bayesNetFragment,
