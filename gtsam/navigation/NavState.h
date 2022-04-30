@@ -107,8 +107,16 @@ public:
   const Vector3& v() const {
     return v_;
   }
-  // Return velocity in body frame
-  Velocity3 bodyVelocity(OptionalJacobian<3, 9> H = boost::none) const;
+  /**
+   * @brief Return velocity in body frame.
+   * Follows from eqn 2.57 in Murray, Li & Sastry.
+   * 
+   * @param omega_b The angular velocity in the body frame.
+   * @param H Optional jacobian matrix.
+   * @return Velocity3 The linear velocity in the body frame.
+   */
+  Velocity3 bodyVelocity(const Vector3& omega_b,
+                         OptionalJacobian<3, 9> H = boost::none) const;
 
   /// Return matrix group representation, in MATLAB notation:
   /// nTb = [nRb 0 n_t; 0 nRb n_v; 0 0 1]

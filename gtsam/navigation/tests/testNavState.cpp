@@ -103,14 +103,19 @@ TEST( NavState, Velocity) {
 }
 
 /* ************************************************************************* */
-TEST( NavState, BodyVelocity) {
+TEST(NavState, BodyVelocity) {
   Matrix39 aH, eH;
-  Velocity3 actual = kState1.bodyVelocity(aH);
-  EXPECT(assert_equal<Velocity3>(actual, kAttitude.unrotate(kVelocity)));
+  Vector3 b_omega = Vector3::Zero();
+  Vector3 n_velocity(1, 0, 0);
+  NavState state(Pose3(Rot3(), Point3(1, 0, 0)), n_velocity);
+  Velocity3 actual = state.bodyVelocity(b_omega, aH);
+  EXPECT(assert_equal<Velocity3>(Vector3::Zero(), actual));
+
   eH = numericalDerivative11<Velocity3, NavState>(
-      std::bind(&NavState::bodyVelocity, std::placeholders::_1, boost::none),
-      kState1);
-  EXPECT(assert_equal((Matrix )eH, aH));
+      std::bind(&NavState::bodyVelocity, std::placeholders::_1, b_omega,
+                boost::none),
+      state);
+  EXPECT(assert_equal((Matrix)eH, aH));
 }
 
 /* ************************************************************************* */
