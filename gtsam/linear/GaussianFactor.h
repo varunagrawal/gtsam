@@ -20,9 +20,9 @@
 
 #pragma once
 
-#include <gtsam/inference/Factor.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/hybrid/HybridFactor.h>
 
 namespace gtsam {
 
@@ -35,12 +35,12 @@ namespace gtsam {
    * An abstract virtual base class for JacobianFactor and HessianFactor. A GaussianFactor has a
    * quadratic error function. GaussianFactor is non-mutable (all methods const!). The factor value
    * is exp(-0.5*||Ax-b||^2) */
-  class GTSAM_EXPORT GaussianFactor : public Factor
+  class GTSAM_EXPORT GaussianFactor : public HybridFactor
   {
   public:
     typedef GaussianFactor This; ///< This class
     typedef std::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
-    typedef Factor Base; ///< Our base class
+    typedef HybridFactor Base; ///< Our base class
 
     /// @name Standard Constructors
     /// @{
