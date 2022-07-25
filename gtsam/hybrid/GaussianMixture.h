@@ -135,7 +135,7 @@ class GTSAM_EXPORT GaussianMixture
   /// @{
 
   /// Test equality with base HybridFactor
-  bool equals(const HybridFactor &lf, double tol = 1e-9) const override;
+  bool equals(const HybridFactor &lf, double tol = 1e-9) const;
 
   /// Print utility
   void print(

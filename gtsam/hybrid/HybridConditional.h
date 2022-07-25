@@ -139,7 +139,7 @@ class GTSAM_EXPORT HybridConditional
       const KeyFormatter& formatter = DefaultKeyFormatter) const override;
 
   /// GTSAM-style equals
-  bool equals(const HybridFactor& other, double tol = 1e-9) const override;
+  bool equals(const HybridFactor& other, double tol = 1e-9) const;
 
   /// @}
   /// @name Standard Interface

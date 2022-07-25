@@ -76,6 +76,19 @@ class GTSAM_EXPORT HybridFactor : public Factor {
   HybridFactor() = default;
 
   /**
+   * @brief Construct a Hybrid Factor from CONTAINER of keys.
+   *
+   * @tparam CONTAINER
+   * @param keys
+   */
+  template <typename CONTAINER>
+  HybridFactor(const CONTAINER &keys)
+      : Base(keys),
+        isContinuous_(true),
+        nrContinuous_(keys.size()),
+        continuousKeys_(Base::keys()) {}
+
+  /**
    * @brief Construct hybrid factor from continuous keys.
    *
    * @param keys Vector of continuous keys.
@@ -103,7 +116,7 @@ class GTSAM_EXPORT HybridFactor : public Factor {
   /// @{
 
   /// equals
-  virtual bool equals(const HybridFactor &lf, double tol = 1e-9) const;
+  bool equals(const HybridFactor &lf, double tol = 1e-9) const;
 
   /// print
   void print(

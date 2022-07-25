@@ -105,7 +105,7 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
   /// @name Testable
   /// @{
 
-  bool equals(const HybridFactor &lf, double tol = 1e-9) const override;
+  bool equals(const HybridFactor &lf, double tol = 1e-9) const;
 
   void print(
       const std::string &s = "GaussianMixtureFactor\n",
