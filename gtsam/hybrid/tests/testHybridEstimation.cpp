@@ -340,7 +340,6 @@ TEST(HybridEstimation, ProbabilityMultifrontal) {
   Switching switching(K, between_sigma, measurement_sigma, measurements,
                       "1/1 1/1");
   auto graph = switching.linearizedFactorGraph;
-  Ordering ordering = getOrdering(graph, HybridGaussianFactorGraph());
 
   // Get the tree of unnormalized probabilities for each mode sequence.
   AlgebraicDecisionTree<Key> expected_probPrimeTree = getProbPrimeTree(graph);
