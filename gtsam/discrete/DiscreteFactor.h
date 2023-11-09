@@ -71,7 +71,14 @@ class GTSAM_EXPORT DiscreteFactor: public HybridFactor {
   /// @{
 
   /// equals
-  virtual bool equals(const DiscreteFactor& lf, double tol = 1e-9) const = 0;
+  virtual bool equals(const HybridFactor& lf,
+                      double tol = 1e-9) const override {
+    return Base::equals(lf, tol);
+  }
+
+  virtual bool equals(const DiscreteFactor& lf, double tol = 1e-9) const {
+    return equals(static_cast<HybridFactor>(lf), tol);
+  }
 
   /// print
   void print(

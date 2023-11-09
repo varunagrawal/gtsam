@@ -20,7 +20,6 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/discrete/DecisionTree.h>
 #include <gtsam/discrete/DiscreteKey.h>
-#include <gtsam/discrete/TableFactor.h>
 #include <gtsam/inference/Factor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
@@ -85,7 +84,6 @@ class GTSAM_EXPORT HybridFactor : public Factor {
   HybridFactor(const CONTAINER &keys)
       : Base(keys),
         isContinuous_(true),
-        nrContinuous_(keys.size()),
         continuousKeys_(Base::keys()) {}
 
   /**
@@ -116,10 +114,10 @@ class GTSAM_EXPORT HybridFactor : public Factor {
   /// @{
 
   /// equals
-  bool equals(const HybridFactor &lf, double tol = 1e-9) const;
+  virtual bool equals(const HybridFactor &lf, double tol = 1e-9) const;
 
   /// print
-  void print(
+  virtual void print(
       const std::string &s = "HybridFactor\n",
       const KeyFormatter &formatter = DefaultKeyFormatter) const override;
 
