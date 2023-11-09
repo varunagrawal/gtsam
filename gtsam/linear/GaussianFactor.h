@@ -63,7 +63,13 @@ namespace gtsam {
         const KeyFormatter& formatter = DefaultKeyFormatter) const override = 0;
 
     /// assert equality up to a tolerance
-    virtual bool equals(const GaussianFactor& lf, double tol = 1e-9) const = 0;
+    virtual bool equals(const HybridFactor& lf, double tol = 1e-9) const override {
+      return Base::equals(lf, tol);
+    }
+
+    virtual bool equals(const GaussianFactor& lf, double tol = 1e-9) const {
+      return equals(static_cast<HybridFactor>(lf), tol);
+    }
 
     /// @}
     /// @name Standard Interface

@@ -21,7 +21,6 @@
 #include <gtsam/discrete/DecisionTree.h>
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/inference/Factor.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 
 #include <cstddef>
@@ -29,6 +28,7 @@
 namespace gtsam {
 
 class HybridValues;
+class GaussianFactorGraph;
 
 /// Alias for DecisionTree of GaussianFactorGraphs
 using GaussianFactorGraphTree = DecisionTree<Key, GaussianFactorGraph>;
