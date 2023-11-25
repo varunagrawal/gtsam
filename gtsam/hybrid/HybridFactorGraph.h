@@ -21,6 +21,7 @@
 
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/inference/FactorGraph.h>
+#include <gtsam/discrete/TableFactor.h>
 
 #include <unordered_map>
 

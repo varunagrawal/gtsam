@@ -18,9 +18,9 @@
 
 #pragma once
 
-#include <gtsam/discrete/DiscreteValues.h>
-#include <gtsam/inference/Factor.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/discrete/DiscreteValues.h>
+#include <gtsam/hybrid/HybridFactor.h>
 
 #include <string>
 namespace gtsam {
@@ -35,13 +35,13 @@ class HybridValues;
  *
  * @ingroup discrete
  */
-class GTSAM_EXPORT DiscreteFactor: public Factor {
+class GTSAM_EXPORT DiscreteFactor: public HybridFactor {
  public:
   // typedefs needed to play nice with gtsam
   typedef DiscreteFactor This;  ///< This class
   typedef std::shared_ptr<DiscreteFactor>
-      shared_ptr;       ///< shared_ptr to this class
-  typedef Factor Base;  ///< Our base class
+      shared_ptr;             ///< shared_ptr to this class
+  typedef HybridFactor Base;  ///< Our base class
 
   using Values = DiscreteValues;  ///< backwards compatibility
 
@@ -71,7 +71,14 @@ class GTSAM_EXPORT DiscreteFactor: public Factor {
   /// @{
 
   /// equals
-  virtual bool equals(const DiscreteFactor& lf, double tol = 1e-9) const = 0;
+  virtual bool equals(const HybridFactor& lf,
+                      double tol = 1e-9) const override {
+    return Base::equals(lf, tol);
+  }
+
+  virtual bool equals(const DiscreteFactor& lf, double tol = 1e-9) const {
+    return equals(static_cast<HybridFactor>(lf), tol);
+  }
 
   /// print
   void print(

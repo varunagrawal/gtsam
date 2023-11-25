@@ -18,6 +18,7 @@
  */
 
 #include <gtsam/hybrid/HybridFactorGraph.h>
+#include <gtsam/linear/GaussianFactor.h>
 
 namespace gtsam {
 
