@@ -288,6 +288,7 @@ class VectorValues {
   bool equals(const gtsam::VectorValues& expected, double tol) const;
   void insert(size_t j, const gtsam::Vector& value);
   gtsam::Vector vector() const;
+  gtsam::Vector vector(const gtsam::KeyVector& keys) const;
   gtsam::Vector at(size_t j) const;
   void insert(const gtsam::VectorValues& values);
   void update(const gtsam::VectorValues& values);
@@ -397,6 +398,9 @@ virtual class HessianFactor : gtsam::GaussianFactor {
                 const gtsam::Vector& g1, const gtsam::Matrix& G22,
                 const gtsam::Matrix& G23, const gtsam::Vector& g2,
                 const gtsam::Matrix& G33, const gtsam::Vector& g3, double f);
+  HessianFactor(const gtsam::KeyVector& js,
+                const std::vector<gtsam::Matrix>& Gs,
+                const std::vector<gtsam::Vector>& gs, double f);
   HessianFactor(const gtsam::GaussianFactorGraph& factors);
 
   // Testable
