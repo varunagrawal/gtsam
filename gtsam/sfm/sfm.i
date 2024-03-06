@@ -23,7 +23,7 @@ virtual class SfmTrack : gtsam::SfmTrack2d {
   SfmTrack();
   SfmTrack(const gtsam::Point3& pt);
   const Point3& point3() const;
-  
+
   Point3 p;
 
   double r;
@@ -37,8 +37,8 @@ virtual class SfmTrack : gtsam::SfmTrack2d {
   bool equals(const gtsam::SfmTrack& expected, double tol) const;
 };
 
-#include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/Values.h>
 #include <gtsam/sfm/SfmData.h>
 class SfmData {
   SfmData();
@@ -81,7 +81,7 @@ virtual class ShonanFactor3 : gtsam::NoiseModelFactor {
   ShonanFactor3(size_t key1, size_t key2, const gtsam::Rot3& R12, size_t p);
   ShonanFactor3(size_t key1, size_t key2, const gtsam::Rot3& R12, size_t p,
                 gtsam::noiseModel::Base* model);
-  Vector evaluateError(const gtsam::SOn& Q1, const gtsam::SOn& Q2);
+  gtsam::Vector evaluateError(const gtsam::SOn& Q1, const gtsam::SOn& Q2);
 };
 
 #include <gtsam/sfm/BinaryMeasurement.h>
@@ -123,14 +123,14 @@ class BinaryMeasurementsRot3 {
   void push_back(const gtsam::BinaryMeasurement<gtsam::Rot3>& measurement);
 };
 
-#include <gtsam/slam/dataset.h>
 #include <gtsam/sfm/ShonanAveraging.h>
+#include <gtsam/slam/dataset.h>
 
-template <d={2, 3}>
+template <d = {2, 3}>
 class ShonanAveragingParameters {
   ShonanAveragingParameters(const gtsam::LevenbergMarquardtParams& lm);
   ShonanAveragingParameters(const gtsam::LevenbergMarquardtParams& lm,
-                             string method);
+                            string method);
   gtsam::LevenbergMarquardtParams getLMParams() const;
   void setOptimalityThreshold(double value);
   double getOptimalityThreshold() const;
@@ -171,14 +171,15 @@ class ShonanAveraging2 {
   Matrix computeA_(const gtsam::Values& values) const;
   double computeMinEigenValue(const gtsam::Values& values) const;
   gtsam::Values initializeWithDescent(size_t p, const gtsam::Values& values,
-                                      const Vector& minEigenVector,
+                                      const gtsam::Vector& minEigenVector,
                                       double minEigenValue) const;
 
   // Advanced API
   gtsam::NonlinearFactorGraph buildGraphAt(size_t p) const;
   gtsam::Values initializeRandomlyAt(size_t p) const;
   double costAt(size_t p, const gtsam::Values& values) const;
-  pair<double, Vector> computeMinEigenVector(const gtsam::Values& values) const;
+  pair<double, gtsam::Vector> computeMinEigenVector(
+      const gtsam::Values& values) const;
   bool checkOptimality(const gtsam::Values& values) const;
   gtsam::LevenbergMarquardtOptimizer* createOptimizerAt(
       size_t p, const gtsam::Values& initial);
@@ -221,14 +222,15 @@ class ShonanAveraging3 {
   Matrix computeA_(const gtsam::Values& values) const;
   double computeMinEigenValue(const gtsam::Values& values) const;
   gtsam::Values initializeWithDescent(size_t p, const gtsam::Values& values,
-                                      const Vector& minEigenVector,
+                                      const gtsam::Vector& minEigenVector,
                                       double minEigenValue) const;
 
   // Advanced API
   gtsam::NonlinearFactorGraph buildGraphAt(size_t p) const;
   gtsam::Values initializeRandomlyAt(size_t p) const;
   double costAt(size_t p, const gtsam::Values& values) const;
-  pair<double, Vector> computeMinEigenVector(const gtsam::Values& values) const;
+  pair<double, gtsam::Vector> computeMinEigenVector(
+      const gtsam::Values& values) const;
   bool checkOptimality(const gtsam::Values& values) const;
   gtsam::LevenbergMarquardtOptimizer* createOptimizerAt(
       size_t p, const gtsam::Values& initial);

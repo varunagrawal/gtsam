@@ -161,32 +161,34 @@ class FactorIndices {
 namespace utilities {
 
 #include <gtsam/nonlinear/utilities.h>
-gtsam::KeyList createKeyList(Vector I);
-gtsam::KeyList createKeyList(string s, Vector I);
-gtsam::KeyVector createKeyVector(Vector I);
-gtsam::KeyVector createKeyVector(string s, Vector I);
-gtsam::KeySet createKeySet(Vector I);
-gtsam::KeySet createKeySet(string s, Vector I);
-Matrix extractPoint2(const gtsam::Values& values);
-Matrix extractPoint3(const gtsam::Values& values);
+gtsam::KeyList createKeyList(const gtsam::Vector& I);
+gtsam::KeyList createKeyList(string s, const gtsam::Vector& I);
+gtsam::KeyVector createKeyVector(const gtsam::Vector& I);
+gtsam::KeyVector createKeyVector(string s, const gtsam::Vector& I);
+gtsam::KeySet createKeySet(const gtsam::Vector& I);
+gtsam::KeySet createKeySet(string s, const gtsam::Vector& I);
+gtsam::Matrix extractPoint2(const gtsam::Values& values);
+gtsam::Matrix extractPoint3(const gtsam::Values& values);
 gtsam::Values allPose2s(gtsam::Values& values);
-Matrix extractPose2(const gtsam::Values& values);
+gtsam::Matrix extractPose2(const gtsam::Values& values);
 gtsam::Values allPose3s(gtsam::Values& values);
-Matrix extractPose3(const gtsam::Values& values);
-Matrix extractVectors(const gtsam::Values& values, char c);
+gtsam::Matrix extractPose3(const gtsam::Values& values);
+gtsam::Matrix extractVectors(const gtsam::Values& values, char c);
 void perturbPoint2(gtsam::Values& values, double sigma, int seed = 42u);
 void perturbPose2(gtsam::Values& values, double sigmaT, double sigmaR,
                   int seed = 42u);
 void perturbPoint3(gtsam::Values& values, double sigma, int seed = 42u);
 void insertBackprojections(gtsam::Values& values,
                            const gtsam::PinholeCamera<gtsam::Cal3_S2>& c,
-                           Vector J, Matrix Z, double depth);
+                           const gtsam::Vector& J, const gtsam::Matrix& Z,
+                           double depth);
 void insertProjectionFactors(
-    gtsam::NonlinearFactorGraph& graph, size_t i, Vector J, Matrix Z,
-    const gtsam::noiseModel::Base* model, const gtsam::Cal3_S2* K,
+    gtsam::NonlinearFactorGraph& graph, size_t i, const gtsam::Vector& J,
+    const gtsam::Matrix& Z, const gtsam::noiseModel::Base* model,
+    const gtsam::Cal3_S2* K,
     const gtsam::Pose3& body_P_sensor = gtsam::Pose3());
-Matrix reprojectionErrors(const gtsam::NonlinearFactorGraph& graph,
-                          const gtsam::Values& values);
+gtsam::Matrix reprojectionErrors(const gtsam::NonlinearFactorGraph& graph,
+                                 const gtsam::Values& values);
 gtsam::Values localToWorld(const gtsam::Values& local,
                            const gtsam::Pose2& base);
 gtsam::Values localToWorld(const gtsam::Values& local, const gtsam::Pose2& base,
