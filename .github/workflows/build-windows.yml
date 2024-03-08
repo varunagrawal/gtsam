@@ -92,7 +92,7 @@ jobs:
           echo "BOOST_ROOT=$BOOST_PATH" >> $env:GITHUB_ENV
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup msbuild
         uses: ilammy/msvc-dev-cmd@v1
