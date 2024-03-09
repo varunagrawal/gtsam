@@ -95,12 +95,12 @@ class NonlinearFactorGraph {
   // Ordering* orderingCOLAMDConstrained(const gtsam::Values& c, const
   // std::map<gtsam::Key,int>& constraints) const;
   gtsam::GaussianFactorGraph* linearize(const gtsam::Values& values) const;
-  // gtsam::HessianFactor* linearizeToHessianFactor(
-  //     const gtsam::Values& values,
-  //     const gtsam::This::Dampen& dampen = nullptr) const;
-  // gtsam::HessianFactor* linearizeToHessianFactor(
-  //     const gtsam::Values& values, gtsam::Ordering ordering,
-  //     const gtsam::This::Dampen& dampen = nullptr) const;
+  gtsam::HessianFactor* linearizeToHessianFactor(
+      const gtsam::Values& values,
+      const gtsam::This::Dampen& dampen = nullptr) const;
+  gtsam::HessianFactor* linearizeToHessianFactor(
+      const gtsam::Values& values, gtsam::Ordering ordering,
+      const gtsam::This::Dampen& dampen = nullptr) const;
   gtsam::NonlinearFactorGraph clone() const;
 
   string dot(
@@ -338,9 +338,9 @@ virtual class NonlinearOptimizer {
   gtsam::Values values() const;
   gtsam::NonlinearFactorGraph graph() const;
   gtsam::GaussianFactorGraph* iterate() const;
-  // gtsam::VectorValues solve(
-  //     gtsam::GaussianFactorGraph& gfg,
-  //     const gtsam::NonlinearOptimizerParams& params) const;
+  gtsam::VectorValues solve(
+      gtsam::GaussianFactorGraph& gfg,
+      const gtsam::NonlinearOptimizerParams& params) const;
 };
 
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
@@ -488,7 +488,7 @@ class ISAM2Result {
   double getErrorBefore() const;
   double getErrorAfter() const;
 
-  // gtsam::FactorIndices newFactorsIndices;
+  gtsam::FactorIndices newFactorsIndices;
 };
 
 class ISAM2 {
@@ -716,8 +716,8 @@ virtual class BatchFixedLagSmoother : gtsam::FixedLagSmoother {
                      gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2,
                      gtsam::Vector, gtsam::Matrix}>
   VALUE calculateEstimate(size_t key) const;
-  // gtsam::VectorValues getDelta() const;
-  // gtsam::Matrix marginalCovariance(gtsam::Key key) const;
+  gtsam::VectorValues getDelta() const;
+  gtsam::Matrix marginalCovariance(gtsam::Key key) const;
 };
 
 }  // namespace gtsam
