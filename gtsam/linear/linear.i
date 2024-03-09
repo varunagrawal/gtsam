@@ -398,9 +398,9 @@ virtual class HessianFactor : gtsam::GaussianFactor {
                 const gtsam::Vector& g1, const gtsam::Matrix& G22,
                 const gtsam::Matrix& G23, const gtsam::Vector& g2,
                 const gtsam::Matrix& G33, const gtsam::Vector& g3, double f);
-  HessianFactor(const gtsam::KeyVector& js,
-                const std::vector<gtsam::Matrix>& Gs,
-                const std::vector<gtsam::Vector>& gs, double f);
+  // HessianFactor(const gtsam::KeyVector& js,
+  //               const std::vector<gtsam::Matrix>& Gs,
+  //               const std::vector<gtsam::Vector>& gs, double f);
   HessianFactor(const gtsam::GaussianFactorGraph& factors);
 
   // Testable
@@ -543,7 +543,7 @@ virtual class GaussianConditional : gtsam::JacobianFactor {
                       const gtsam::Matrix& T,
                       const gtsam::noiseModel::Diagonal* sigmas);
   GaussianConditional(
-      const std::vector<std::pair<gtsam::Key, gtsam::Matrix>> terms,
+      const std::vector<std::pair<gtsam::Key, const gtsam::Matrix&>> terms,
       size_t nrFrontals, const gtsam::Vector& d,
       const gtsam::noiseModel::Diagonal* sigmas);
 

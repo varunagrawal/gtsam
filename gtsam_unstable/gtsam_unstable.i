@@ -598,16 +598,16 @@ virtual class IncrementalFixedLagSmoother : gtsam::FixedLagSmoother {
 
   gtsam::ISAM2Params params() const;
 
-  gtsam::FixedLagSmootherResult update(
-      const gtsam::NonlinearFactorGraph& newFactors,
-      const gtsam::Values& newTheta,
-      const gtsam::FixedLagSmootherKeyTimestampMap& timestamps,
-      const gtsam::FactorIndices& factorsToRemove);
+  // gtsam::FixedLagSmootherResult update(
+  //     const gtsam::NonlinearFactorGraph& newFactors,
+  //     const gtsam::Values& newTheta,
+  //     const gtsam::FixedLagSmootherKeyTimestampMap& timestamps,
+  //     const gtsam::FactorIndices& factorsToRemove);
 
-  gtsam::VectorValues getDelta() const;
+  // gtsam::VectorValues getDelta() const;
   gtsam::NonlinearFactorGraph getFactors() const;
   gtsam::ISAM2 getISAM2() const;
-  gtsam::ISAM2Result getISAM2Result() const;
+  // gtsam::ISAM2Result getISAM2Result() const;
 };
 
 #include <gtsam_unstable/nonlinear/ConcurrentFilteringAndSmoothing.h>
@@ -682,17 +682,17 @@ virtual class ConcurrentBatchSmoother : gtsam::ConcurrentSmoother {
   gtsam::Values calculateEstimate() const;
 };
 
-#include <gtsam_unstable/nonlinear/LinearizedFactor.h>
+// #include <gtsam_unstable/nonlinear/LinearizedFactor.h>
 
-virtual class LinearizedGaussianFactor : gtsam::NonlinearFactor {
-  const gtsam::Values& linearizationPoint() const;
-};
+// virtual class LinearizedGaussianFactor : gtsam::NonlinearFactor {
+//   const gtsam::Values& linearizationPoint() const;
+// };
 
-virtual class LinearizedHessianFactor : gtsam::LinearizedGaussianFactor {
-  LinearizedHessianFactor();
-  LinearizedHessianFactor(const gtsam::HessianFactor* hessian,
-                          const gtsam::Values& lin_points);
-};
+// virtual class LinearizedHessianFactor : gtsam::LinearizedGaussianFactor {
+//   LinearizedHessianFactor();
+//   LinearizedHessianFactor(const gtsam::HessianFactor* hessian,
+//                           const gtsam::Values& lin_points);
+// };
 
 //*************************************************************************
 // slam
@@ -755,7 +755,7 @@ class Mechanization_bRn2 {
                                               double g_e);
   gtsam::Mechanization_bRn2 correct(const gtsam::Vector& dx) const;
   gtsam::Mechanization_bRn2 integrate(const gtsam::Vector& u, double dt) const;
-  void print(string s) const;
+  // void print(string s) const;
 };
 
 #include <gtsam_unstable/slam/AHRS.h>
@@ -773,7 +773,7 @@ class AHRS {
       const gtsam::Mechanization_bRn2& mech, gtsam::GaussianDensity* state,
       const gtsam::Vector& f, const gtsam::Vector& f_expected,
       const gtsam::Rot3& increment);
-  void print(string s) const;
+  // void print(string s) const;
 };
 
 // Tectonic SAM Factors
