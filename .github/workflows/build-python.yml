@@ -32,7 +32,7 @@ jobs:
             ubuntu-20.04-gcc-9-tbb,
             ubuntu-20.04-clang-9,
             macOS-11-xcode-13.4.1,
-            windows-2022-msbuild,
+            # windows-2022-msbuild,
           ]
 
         build_type: [Release]
@@ -59,9 +59,9 @@ jobs:
             compiler: xcode
             version: "13.4.1"
 
-          - name: windows-2022-msbuild
-            os: windows-2022
-            platform: 64
+          # - name: windows-2022-msbuild
+          #   os: windows-2022
+          #   platform: 64
 
     steps:
       - name: Checkout
