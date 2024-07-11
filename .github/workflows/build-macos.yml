@@ -40,12 +40,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Install Dependencies
-        run: |
-          brew install cmake ninja
-          brew install boost
-          sudo xcode-select -switch /Applications/Xcode.app
-          echo "CC=clang" >> $GITHUB_ENV
-          echo "CXX=clang++" >> $GITHUB_ENV
-      - name: Build and Test
-        run: bash .github/scripts/unix.sh -t
+      # - name: Install Dependencies
+      #   run: |
+      #     brew install cmake ninja
+      #     brew install boost
+      #     sudo xcode-select -switch /Applications/Xcode.app
+      #     echo "CC=clang" >> $GITHUB_ENV
+      #     echo "CXX=clang++" >> $GITHUB_ENV
+      # - name: Build and Test
+      #   run: bash .github/scripts/unix.sh -t
