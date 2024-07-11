@@ -109,7 +109,7 @@ endif()
 # Other (non-preprocessor macros) compiler flags:
 if(MSVC)
   # Common to all configurations, next for each configuration:
-  set(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON          /W3 /GR /EHsc /MP  CACHE STRING "(User editable) Private compiler flags for all configurations.")
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON          /w /GR /EHsc /MP  CACHE STRING "(User editable) Private compiler flags for all configurations.")
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_DEBUG           /MDd /Zi /Ob0 /Od /RTC1  CACHE STRING "(User editable) Private compiler flags for Debug configuration.")
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELWITHDEBINFO  /MD /O2 /D /Zi /d2Zi+  CACHE STRING "(User editable) Private compiler flags for RelWithDebInfo configuration.")
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELEASE         /MD /O2  CACHE STRING "(User editable) Private compiler flags for Release configuration.")
