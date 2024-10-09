@@ -104,7 +104,7 @@ TEST(HybridGaussianFactor, Keys) {
 }
 
 /* ************************************************************************* */
-TEST_DISABLED(HybridGaussianFactor, Printing) {
+TEST(HybridGaussianFactor, Printing) {
   using namespace test_constructor;
   HybridGaussianFactor hybridFactor(m1, {f10, f11});
 
