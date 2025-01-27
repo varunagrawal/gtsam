@@ -49,6 +49,9 @@ bool HybridBayesNet::equals(const This &bn, double tol) const {
 // search to find the K-best leaves and then create a single pruned conditional.
 HybridBayesNet HybridBayesNet::prune(
     size_t maxNrLeaves, const std::optional<double> &deadModeThreshold) const {
+#if GTSAM_HYBRID_TIMING
+  gttic_(HybridPruning);
+#endif
   // Collect all the discrete conditionals. Could be small if already pruned.
   const DiscreteBayesNet marginal = discreteMarginal();
 
@@ -151,6 +154,10 @@ HybridBayesNet HybridBayesNet::prune(
     }
     // We ignore DiscreteConditional as they are already pruned and added.
   }
+
+#if GTSAM_HYBRID_TIMING
+  gttoc_(HybridPruning);
+#endif
 
   return result;
 }
