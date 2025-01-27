@@ -39,6 +39,7 @@ using namespace std;
 using namespace gtsam;
 using namespace boost::algorithm;
 
+using symbol_shorthand::L;
 using symbol_shorthand::M;
 using symbol_shorthand::X;
 
@@ -75,6 +76,30 @@ void write_results(const Values& results, size_t num_poses,
   std::cout << "output written to " << filename << std::endl;
 }
 
+// HybridNonlinearFactor LoopClosureHybridFactor() {
+//   DiscreteKey l(L(loop_counter), 2);
+//   auto f0 = std::make_shared<BetweenFactor<Pose2>>(
+//       X(key_s), X(key_t), pose_array[0], pose_noise_model);
+//   auto f1 = std::make_shared<BetweenFactor<Pose2>>(
+//       X(key_s), X(key_t), pose_array[1], pose_noise_model);
+//   std::vector<NonlinearFactorValuePair> factors{{f0, 0.0}, {f1, 0.0}};
+//   HybridNonlinearFactor mixtureFactor(l, {f0, f1});
+// }
+
+HybridNonlinearFactor HybridOdometryFactor(
+    size_t num_measurements, size_t key_s, size_t key_t, const DiscreteKey& m,
+    const std::vector<Pose2>& pose_array,
+    const SharedNoiseModel& pose_noise_model) {
+  auto f0 = std::make_shared<BetweenFactor<Pose2>>(
+      X(key_s), X(key_t), pose_array[0], pose_noise_model);
+  auto f1 = std::make_shared<BetweenFactor<Pose2>>(
+      X(key_s), X(key_t), pose_array[1], pose_noise_model);
+  std::vector<NonlinearFactorValuePair> factors{{f0, 0.0}, {f1, 0.0}};
+  HybridNonlinearFactor mixtureFactor(m, factors);
+  // HybridNonlinearFactor mixtureFactor(m, {f0, f1});
+  return mixtureFactor;
+}
+
 void SmootherUpdate(HybridSmoother& smoother, HybridNonlinearFactorGraph& graph,
                     const Values& initial, size_t maxNrHypotheses,
                     Values* results) {
@@ -82,7 +107,9 @@ void SmootherUpdate(HybridSmoother& smoother, HybridNonlinearFactorGraph& graph,
   // std::cout << "index: " << index << std::endl;
   smoother.update(linearized, maxNrHypotheses);
   graph.resize(0);
+  gttic_(HybridSmootherOptimize);
   HybridValues delta = smoother.hybridBayesNet().optimize();
+  gttoc_(HybridSmootherOptimize);
   results->insert_or_assign(initial.retract(delta.continuous()));
 }
 
@@ -96,6 +123,8 @@ int main(int argc, char* argv[]) {
   // ifstream in("../data/mh_All_city10000_groundtruth.txt");
 
   size_t discrete_count = 0, index = 0;
+  size_t pose_count = 0, loop_count = 0;
+  size_t nrHybridFactors = 0;
 
   std::list<double> time_list;
 
@@ -131,6 +160,9 @@ int main(int argc, char* argv[]) {
     key_s = stoi(parts[1]);
     key_t = stoi(parts[3]);
 
+    int empty = stoi(parts[4]);  // 0 or 1
+    bool allow_empty = !(empty == 0);
+
     int num_measurements = stoi(parts[5]);
     vector<Pose2> pose_array(num_measurements);
     for (int i = 0; i < num_measurements; ++i) {
@@ -140,33 +172,30 @@ int main(int argc, char* argv[]) {
       pose_array[i] = Pose2(x, y, rad);
     }
 
-    // Take the first one as the initial estimate
-    Pose2 odom_pose = pose_array[0];
-    if (key_s == key_t - 1) {  // new X(key)
-      init_values.insert(X(key_t), init_values.at<Pose2>(X(key_s)) * odom_pose);
-
-    } else {  // loop
-      // index++;
-    }
-
     // Flag if we should run smoother update
     bool smoother_update = false;
 
-    if (num_measurements == 2) {
-      // Add hybrid factor which considers both measurements
-      DiscreteKey m(M(discrete_count), num_measurements);
-      discrete_count++;
+    // Take the first one as the initial estimate
+    Pose2 odom_pose = pose_array[0];
+    if (key_s == key_t - 1) {  // odometry
 
+      init_values.insert(X(key_t), init_values.at<Pose2>(X(key_s)) * odom_pose);
+      pose_count++;
+
+    } else {  // loop
+      loop_count++;
+    }
+
+    if (num_measurements > 1) {
+      DiscreteKey m(M(discrete_count), num_measurements);
       graph.push_back(DecisionTreeFactor(m, "0.6 0.4"));
 
-      auto f0 = std::make_shared<BetweenFactor<Pose2>>(
-          X(key_s), X(key_t), pose_array[0], pose_noise_model);
-      auto f1 = std::make_shared<BetweenFactor<Pose2>>(
-          X(key_s), X(key_t), pose_array[1], pose_noise_model);
-      std::vector<NonlinearFactorValuePair> factors{{f0, 0.0}, {f1, 0.0}};
-      // HybridNonlinearFactor mixtureFactor(m, factors);
-      HybridNonlinearFactor mixtureFactor(m, {f0, f1});
+      // Add hybrid factor which considers both measurements
+      HybridNonlinearFactor mixtureFactor = HybridOdometryFactor(
+          num_measurements, key_s, key_t, m, pose_array, pose_noise_model);
       graph.push_back(mixtureFactor);
+
+      discrete_count++;
 
       smoother_update = true;
 
@@ -183,10 +212,11 @@ int main(int argc, char* argv[]) {
     // if (index % 50 == 0 && key_s != key_t - 1) {
     if (index % 100 == 0) {
       std::cout << "index: " << index << std::endl;
-      std::cout << "acc_time:  " << time_list.back() / CLOCKS_PER_SEC << std::endl;
+      std::cout << "acc_time:  " << time_list.back() / CLOCKS_PER_SEC
+                << std::endl;
       // delta.discrete().print("The Discrete Assignment");
       tictoc_finishedIteration_();
-      tictoc_print_();
+      // tictoc_print_();
     }
 
     if (key_s == key_t - 1) {
@@ -214,6 +244,7 @@ int main(int argc, char* argv[]) {
   }
   outfile_time.close();
   cout << "output " << time_file_name << " file." << endl;
+  std::cout << nrHybridFactors << std::endl;
 
   return 0;
 }
