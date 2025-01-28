@@ -322,6 +322,10 @@ HybridGaussianConditional::shared_ptr HybridGaussianConditional::prune(
   auto pruner =
       [&](const Assignment<Key> &choices,
           const GaussianFactorValuePair &pair) -> GaussianFactorValuePair {
+    // If Gaussian factor is nullptr, return infinity
+    if (!pair.first) {
+      return {nullptr, std::numeric_limits<double>::infinity()};
+    }
     if (max->evaluate(choices) == 0.0)
       return {nullptr, std::numeric_limits<double>::infinity()};
     else {
