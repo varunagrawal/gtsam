@@ -44,7 +44,7 @@ using symbol_shorthand::M;
 using symbol_shorthand::X;
 
 // Testing params
-const size_t max_loop_count = 2000;  // 2000;  // 200 //2000 //8000
+const size_t max_loop_count = 3000;  // 2000;  // 200 //2000 //8000
 
 noiseModel::Diagonal::shared_ptr prior_noise_model =
     noiseModel::Diagonal::Sigmas(
@@ -76,15 +76,34 @@ void write_results(const Values& results, size_t num_poses,
   std::cout << "output written to " << filename << std::endl;
 }
 
-// HybridNonlinearFactor LoopClosureHybridFactor() {
-//   DiscreteKey l(L(loop_counter), 2);
-//   auto f0 = std::make_shared<BetweenFactor<Pose2>>(
-//       X(key_s), X(key_t), pose_array[0], pose_noise_model);
-//   auto f1 = std::make_shared<BetweenFactor<Pose2>>(
-//       X(key_s), X(key_t), pose_array[1], pose_noise_model);
-//   std::vector<NonlinearFactorValuePair> factors{{f0, 0.0}, {f1, 0.0}};
-//   HybridNonlinearFactor mixtureFactor(l, {f0, f1});
-// }
+/**
+ * @brief Create a hybrid loop closure factor where
+ * 0 - loose noise model and 1 - loop noise model.
+ *
+ * @param loop_counter
+ * @param key_s
+ * @param key_t
+ * @param measurement
+ * @return HybridNonlinearFactor
+ */
+HybridNonlinearFactor HybridLoopClosureFactor(size_t loop_counter, size_t key_s,
+                                              size_t key_t,
+                                              const Pose2& measurement) {
+  DiscreteKey l(L(loop_counter), 2);
+  noiseModel::Diagonal::shared_ptr loop_noise_model =
+      noiseModel::Diagonal::Sigmas(
+          Vector3(1.0 / 30.0, 1.0 / 30.0, 1.0 / 100.0));
+  noiseModel::Diagonal::shared_ptr loose_noise_model =
+      noiseModel::Diagonal::Sigmas(Vector3::Ones() * 100);
+
+  auto f0 = std::make_shared<BetweenFactor<Pose2>>(
+      X(key_s), X(key_t), measurement, loose_noise_model);
+  auto f1 = std::make_shared<BetweenFactor<Pose2>>(
+      X(key_s), X(key_t), measurement, loop_noise_model);
+  std::vector<NonlinearFactorValuePair> factors{{f0, 0.0}, {f1, 0.0}};
+  HybridNonlinearFactor mixtureFactor(l, {f0, f1});
+  return mixtureFactor;
+}
 
 HybridNonlinearFactor HybridOdometryFactor(
     size_t num_measurements, size_t key_s, size_t key_t, const DiscreteKey& m,
@@ -107,9 +126,7 @@ void SmootherUpdate(HybridSmoother& smoother, HybridNonlinearFactorGraph& graph,
   // std::cout << "index: " << index << std::endl;
   smoother.update(linearized, maxNrHypotheses);
   graph.resize(0);
-  gttic_(HybridSmootherOptimize);
   HybridValues delta = smoother.hybridBayesNet().optimize();
-  gttoc_(HybridSmootherOptimize);
   results->insert_or_assign(initial.retract(delta.continuous()));
 }
 
@@ -123,7 +140,7 @@ int main(int argc, char* argv[]) {
   // ifstream in("../data/mh_All_city10000_groundtruth.txt");
 
   size_t discrete_count = 0, index = 0;
-  size_t pose_count = 0, loop_count = 0;
+  size_t loop_count = 0;
   size_t nrHybridFactors = 0;
 
   std::list<double> time_list;
@@ -160,9 +177,6 @@ int main(int argc, char* argv[]) {
     key_s = stoi(parts[1]);
     key_t = stoi(parts[3]);
 
-    int empty = stoi(parts[4]);  // 0 or 1
-    bool allow_empty = !(empty == 0);
-
     int num_measurements = stoi(parts[5]);
     vector<Pose2> pose_array(num_measurements);
     for (int i = 0; i < num_measurements; ++i) {
@@ -179,33 +193,41 @@ int main(int argc, char* argv[]) {
     Pose2 odom_pose = pose_array[0];
     if (key_s == key_t - 1) {  // odometry
 
+      if (num_measurements > 1) {
+        DiscreteKey m(M(discrete_count), num_measurements);
+        // graph.push_back(DecisionTreeFactor(m, "0.6 0.4"));
+
+        // Add hybrid factor which considers both measurements
+        HybridNonlinearFactor mixtureFactor = HybridOdometryFactor(
+            num_measurements, key_s, key_t, m, pose_array, pose_noise_model);
+        graph.push_back(mixtureFactor);
+
+        discrete_count++;
+
+        smoother_update = true;
+
+      } else {
+        graph.add(BetweenFactor<Pose2>(X(key_s), X(key_t), odom_pose,
+                                       pose_noise_model));
+      }
+
       init_values.insert(X(key_t), init_values.at<Pose2>(X(key_s)) * odom_pose);
-      pose_count++;
 
     } else {  // loop
-      loop_count++;
-    }
-
-    if (num_measurements > 1) {
-      DiscreteKey m(M(discrete_count), num_measurements);
-      graph.push_back(DecisionTreeFactor(m, "0.6 0.4"));
-
-      // Add hybrid factor which considers both measurements
-      HybridNonlinearFactor mixtureFactor = HybridOdometryFactor(
-          num_measurements, key_s, key_t, m, pose_array, pose_noise_model);
-      graph.push_back(mixtureFactor);
-
-      discrete_count++;
+      HybridNonlinearFactor loop_factor =
+          HybridLoopClosureFactor(loop_count, key_s, key_t, odom_pose);
+      graph.add(loop_factor);
 
       smoother_update = true;
 
-    } else {
-      graph.add(BetweenFactor<Pose2>(X(key_s), X(key_t), odom_pose,
-                                     pose_noise_model));
+      loop_count++;
     }
 
     if (smoother_update) {
+      gttic_(SmootherUpdate);
       SmootherUpdate(smoother, graph, init_values, maxNrHypotheses, &results);
+      init_values.update(results);
+      gttoc_(SmootherUpdate);
     }
 
     // Print loop index and time taken in processor clock ticks
@@ -216,7 +238,7 @@ int main(int argc, char* argv[]) {
                 << std::endl;
       // delta.discrete().print("The Discrete Assignment");
       tictoc_finishedIteration_();
-      // tictoc_print_();
+      tictoc_print_();
     }
 
     if (key_s == key_t - 1) {
@@ -229,15 +251,22 @@ int main(int argc, char* argv[]) {
 
   SmootherUpdate(smoother, graph, init_values, maxNrHypotheses, &results);
 
+  gttic_(HybridSmootherOptimize);
+  HybridValues delta = smoother.hybridBayesNet().optimize();
+  gttoc_(HybridSmootherOptimize);
+  results.insert_or_assign(init_values.retract(delta.continuous()));
+
+  std::cout << "Final error: " << smoother.hybridBayesNet().error(delta)
+            << std::endl;
   clock_t end_time = clock();
   clock_t total_time = end_time - start_time;
   cout << "total_time: " << total_time / CLOCKS_PER_SEC << " seconds" << endl;
 
   /// Write results to file
-  write_results(results, (key_t + 1), "HybridISAM_city10000.txt");
+  write_results(results, (key_t + 1), "Hybrid_City10000.txt");
 
   ofstream outfile_time;
-  std::string time_file_name = "HybridISAM_city10000_time.txt";
+  std::string time_file_name = "Hybrid_City10000_time.txt";
   outfile_time.open(time_file_name);
   for (auto acc_time : time_list) {
     outfile_time << acc_time << std::endl;
