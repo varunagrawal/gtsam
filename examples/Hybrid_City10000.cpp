@@ -55,19 +55,19 @@ noiseModel::Diagonal::shared_ptr pose_noise_model =
         (Vector(3) << 1.0 / 30.0, 1.0 / 30.0, 1.0 / 100.0).finished());
 
 /**
- * @brief Write the results of optimization to filename.
+ * @brief Write the result of optimization to filename.
  *
- * @param results The Values object with the final results.
+ * @param result The Values object with the final result.
  * @param num_poses The number of poses to write to the file.
- * @param filename The file name to save the results to.
+ * @param filename The file name to save the result to.
  */
-void write_results(const Values& results, size_t num_poses,
-                   const std::string& filename = "ISAM2_city10000.txt") {
+void write_result(const Values& result, size_t num_poses,
+                  const std::string& filename = "Hybrid_city10000.txt") {
   ofstream outfile;
   outfile.open(filename);
 
   for (size_t i = 0; i < num_poses; ++i) {
-    Pose2 out_pose = results.at<Pose2>(X(i));
+    Pose2 out_pose = result.at<Pose2>(X(i));
 
     outfile << out_pose.x() << " " << out_pose.y() << " " << out_pose.theta()
             << std::endl;
@@ -121,13 +121,13 @@ HybridNonlinearFactor HybridOdometryFactor(
 
 void SmootherUpdate(HybridSmoother& smoother, HybridNonlinearFactorGraph& graph,
                     const Values& initial, size_t maxNrHypotheses,
-                    Values* results) {
+                    Values* result) {
   HybridGaussianFactorGraph linearized = *graph.linearize(initial);
   // std::cout << "index: " << index << std::endl;
   smoother.update(linearized, maxNrHypotheses);
   graph.resize(0);
   HybridValues delta = smoother.hybridBayesNet().optimize();
-  results->insert_or_assign(initial.retract(delta.continuous()));
+  result->insert_or_assign(initial.retract(delta.continuous()));
 }
 
 /* ************************************************************************* */
@@ -149,8 +149,7 @@ int main(int argc, char* argv[]) {
 
   HybridNonlinearFactorGraph graph;
 
-  Values init_values;
-  Values results;
+  Values initial, result;
 
   size_t maxNrHypotheses = 3;
 
@@ -160,11 +159,11 @@ int main(int argc, char* argv[]) {
 
   Pose2 prior_pose(x, y, rad);
 
-  init_values.insert(X(0), prior_pose);
+  initial.insert(X(0), prior_pose);
 
   graph.push_back(PriorFactor<Pose2>(X(0), prior_pose, prior_noise_model));
 
-  SmootherUpdate(smoother, graph, init_values, maxNrHypotheses, &results);
+  SmootherUpdate(smoother, graph, initial, maxNrHypotheses, &result);
 
   size_t key_s, key_t{0};
 
@@ -195,7 +194,6 @@ int main(int argc, char* argv[]) {
 
       if (num_measurements > 1) {
         DiscreteKey m(M(discrete_count), num_measurements);
-        // graph.push_back(DecisionTreeFactor(m, "0.6 0.4"));
 
         // Add hybrid factor which considers both measurements
         HybridNonlinearFactor mixtureFactor = HybridOdometryFactor(
@@ -211,7 +209,7 @@ int main(int argc, char* argv[]) {
                                        pose_noise_model));
       }
 
-      init_values.insert(X(key_t), init_values.at<Pose2>(X(key_s)) * odom_pose);
+      initial.insert(X(key_t), initial.at<Pose2>(X(key_s)) * odom_pose);
 
     } else {  // loop
       HybridNonlinearFactor loop_factor =
@@ -225,8 +223,7 @@ int main(int argc, char* argv[]) {
 
     if (smoother_update) {
       gttic_(SmootherUpdate);
-      SmootherUpdate(smoother, graph, init_values, maxNrHypotheses, &results);
-      init_values.update(results);
+      SmootherUpdate(smoother, graph, initial, maxNrHypotheses, &result);
       gttoc_(SmootherUpdate);
     }
 
@@ -249,12 +246,12 @@ int main(int argc, char* argv[]) {
     index += 1;
   }
 
-  SmootherUpdate(smoother, graph, init_values, maxNrHypotheses, &results);
+  SmootherUpdate(smoother, graph, initial, maxNrHypotheses, &result);
 
   gttic_(HybridSmootherOptimize);
   HybridValues delta = smoother.hybridBayesNet().optimize();
   gttoc_(HybridSmootherOptimize);
-  results.insert_or_assign(init_values.retract(delta.continuous()));
+  result.insert_or_assign(initial.retract(delta.continuous()));
 
   std::cout << "Final error: " << smoother.hybridBayesNet().error(delta)
             << std::endl;
@@ -262,8 +259,8 @@ int main(int argc, char* argv[]) {
   clock_t total_time = end_time - start_time;
   cout << "total_time: " << total_time / CLOCKS_PER_SEC << " seconds" << endl;
 
-  /// Write results to file
-  write_results(results, (key_t + 1), "Hybrid_City10000.txt");
+  /// Write result to file
+  write_result(result, (key_t + 1), "Hybrid_City10000.txt");
 
   ofstream outfile_time;
   std::string time_file_name = "Hybrid_City10000_time.txt";
