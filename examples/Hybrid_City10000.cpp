@@ -141,7 +141,7 @@ int main(int argc, char* argv[]) {
 
   std::list<double> time_list;
 
-  HybridSmoother smoother;
+  HybridSmoother smoother(0.99);
 
   HybridNonlinearFactorGraph graph;
 
