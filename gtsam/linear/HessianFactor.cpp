@@ -245,7 +245,7 @@ HessianFactor::HessianFactor(const GaussianFactorGraph& factors,
 
   // Form A' * A
   gttic(update);
-  info_.setZero();
+  info_.setAllZero();
   for(const auto& factor: factors)
     if (factor)
       factor->updateHessian(keys_, &info_);
