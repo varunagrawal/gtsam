@@ -72,6 +72,10 @@ HybridBayesNet HybridBayesNet::prune(
   // If we have a dead mode threshold and discrete variables left after pruning,
   // then we run dead mode removal.
   if (deadModeThreshold.has_value() && pruned.keys().size() > 0) {
+#if GTSAM_HYBRID_TIMING
+    gttic_(DeadModeRemoval);
+#endif
+
     DiscreteMarginals marginals(DiscreteFactorGraph{pruned});
     for (auto dkey : pruned.discreteKeys()) {
       Vector probabilities = marginals.marginalProbabilities(dkey);
@@ -107,6 +111,10 @@ HybridBayesNet HybridBayesNet::prune(
       result.push_back(
           std::dynamic_pointer_cast<DiscreteConditional>(marginals(key)));
     }
+
+#if GTSAM_HYBRID_TIMING
+    gttoc_(DeadModeRemoval);
+#endif
 
   } else {
     result.emplace_shared<DiscreteConditional>(pruned);
