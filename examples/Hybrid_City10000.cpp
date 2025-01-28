@@ -90,16 +90,12 @@ HybridNonlinearFactor HybridLoopClosureFactor(size_t loop_counter, size_t key_s,
                                               size_t key_t,
                                               const Pose2& measurement) {
   DiscreteKey l(L(loop_counter), 2);
-  noiseModel::Diagonal::shared_ptr loop_noise_model =
-      noiseModel::Diagonal::Sigmas(
-          Vector3(1.0 / 30.0, 1.0 / 30.0, 1.0 / 100.0));
-  noiseModel::Diagonal::shared_ptr loose_noise_model =
-      noiseModel::Diagonal::Sigmas(Vector3::Ones() * 100);
 
   auto f0 = std::make_shared<BetweenFactor<Pose2>>(
-      X(key_s), X(key_t), measurement, loose_noise_model);
+      X(key_s), X(key_t), measurement,
+      noiseModel::Diagonal::Sigmas(Vector3::Ones() * 100));
   auto f1 = std::make_shared<BetweenFactor<Pose2>>(
-      X(key_s), X(key_t), measurement, loop_noise_model);
+      X(key_s), X(key_t), measurement, pose_noise_model);
   std::vector<NonlinearFactorValuePair> factors{{f0, 0.0}, {f1, 0.0}};
   HybridNonlinearFactor mixtureFactor(l, {f0, f1});
   return mixtureFactor;
@@ -145,7 +141,7 @@ int main(int argc, char* argv[]) {
 
   std::list<double> time_list;
 
-  HybridSmoother smoother(0.99);
+  HybridSmoother smoother;
 
   HybridNonlinearFactorGraph graph;
 
@@ -163,7 +159,12 @@ int main(int argc, char* argv[]) {
 
   graph.push_back(PriorFactor<Pose2>(X(0), prior_pose, prior_noise_model));
 
+  std::vector<std::pair<size_t, double>> smoother_update_times;
+
+  clock_t before_update = clock();
   SmootherUpdate(smoother, graph, initial, maxNrHypotheses, &result);
+  clock_t after_update = clock();
+  smoother_update_times.push_back({index, after_update - before_update});
 
   size_t key_s, key_t{0};
 
@@ -223,7 +224,10 @@ int main(int argc, char* argv[]) {
 
     if (smoother_update) {
       gttic_(SmootherUpdate);
+      before_update = clock();
       SmootherUpdate(smoother, graph, initial, maxNrHypotheses, &result);
+      after_update = clock();
+      smoother_update_times.push_back({index, after_update - before_update});
       gttoc_(SmootherUpdate);
     }
 
@@ -246,7 +250,10 @@ int main(int argc, char* argv[]) {
     index += 1;
   }
 
+  before_update = clock();
   SmootherUpdate(smoother, graph, initial, maxNrHypotheses, &result);
+  after_update = clock();
+  smoother_update_times.push_back({index, after_update - before_update});
 
   gttic_(HybridSmootherOptimize);
   HybridValues delta = smoother.hybridBayesNet().optimize();
@@ -262,6 +269,11 @@ int main(int argc, char* argv[]) {
   /// Write result to file
   write_result(result, (key_t + 1), "Hybrid_City10000.txt");
 
+  //TODO Write to file
+  // for (size_t i = 0; i < smoother_update_times.size(); i++) {
+  //   auto p = smoother_update_times.at(i);
+  //   std::cout << p.first << ", " << p.second / CLOCKS_PER_SEC << std::endl;
+  // }
   ofstream outfile_time;
   std::string time_file_name = "Hybrid_City10000_time.txt";
   outfile_time.open(time_file_name);
