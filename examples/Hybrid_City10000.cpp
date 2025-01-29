@@ -92,7 +92,7 @@ class Experiment {
 
     auto f0 = std::make_shared<BetweenFactor<Pose2>>(
         X(keyS), X(keyT), measurement,
-        noiseModel::Diagonal::Sigmas(Vector3::Ones() * 100));
+        noiseModel::Diagonal::Sigmas(Vector3::Ones() * 10));
     auto f1 = std::make_shared<BetweenFactor<Pose2>>(
         X(keyS), X(keyT), measurement, kPoseNoiseModel);
 
