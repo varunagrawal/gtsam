@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <unordered_set>
 
+// #define DEBUG_SMOOTHER
 namespace gtsam {
 
 /* ************************************************************************* */
@@ -56,10 +57,16 @@ Ordering HybridSmoother::getOrdering(const HybridGaussianFactorGraph &factors,
 void HybridSmoother::update(const HybridGaussianFactorGraph &graph,
                             std::optional<size_t> maxNrLeaves,
                             const std::optional<Ordering> given_ordering) {
+  std::cout << "hybridBayesNet_ size before: " << hybridBayesNet_.size() << std::endl;
+  std::cout << "newFactors size: " << graph.size() << std::endl;
   HybridGaussianFactorGraph updatedGraph;
   // Add the necessary conditionals from the previous timestep(s).
   std::tie(updatedGraph, hybridBayesNet_) =
       addConditionals(graph, hybridBayesNet_);
+  // print size of graph, updatedGraph, hybridBayesNet_
+  std::cout << "updatedGraph size: " << updatedGraph.size() << std::endl;
+  std::cout << "hybridBayesNet_ size after: " << hybridBayesNet_.size() << std::endl;
+  std::cout << "total size: " << updatedGraph.size() + hybridBayesNet_.size() << std::endl;
 
   Ordering ordering;
   // If no ordering provided, then we compute one
@@ -77,12 +84,39 @@ void HybridSmoother::update(const HybridGaussianFactorGraph &graph,
   // Eliminate.
   HybridBayesNet bayesNetFragment = *updatedGraph.eliminateSequential(ordering);
 
+#ifdef DEBUG_SMOOTHER
+  for (auto conditional: bayesNetFragment) {
+    auto e =std::dynamic_pointer_cast<HybridConditional::BaseConditional>(conditional);
+    GTSAM_PRINT(*e);
+  }
+#endif
+
+  // Print discrete keys in the bayesNetFragment:
+  std::cout << "Discrete keys in bayesNetFragment: ";
+  for (auto &key : HybridFactorGraph(bayesNetFragment).discreteKeySet()) {
+    std::cout << DefaultKeyFormatter(key) << " ";
+  }
+
   /// Prune
   if (maxNrLeaves) {
     // `pruneBayesNet` sets the leaves with 0 in discreteFactor to nullptr in
     // all the conditionals with the same keys in bayesNetFragment.
     bayesNetFragment = bayesNetFragment.prune(*maxNrLeaves, deadModeThreshold_);
   }
+
+  // Print discrete keys in the bayesNetFragment:
+  std::cout << "\nAfter pruning: ";
+  for (auto &key : HybridFactorGraph(bayesNetFragment).discreteKeySet()) {
+    std::cout << DefaultKeyFormatter(key) << " ";
+  }
+  std::cout << std::endl << std::endl;
+
+#ifdef DEBUG_SMOOTHER
+  for (auto conditional: bayesNetFragment) {
+    auto c =std::dynamic_pointer_cast<HybridConditional::BaseConditional>(conditional);
+    GTSAM_PRINT(*c);
+  }
+#endif
 
   // Add the partial bayes net to the posterior bayes net.
   hybridBayesNet_.add(bayesNetFragment);
@@ -108,6 +142,31 @@ HybridSmoother::addConditionals(const HybridGaussianFactorGraph &originalGraph,
 
     // NOTE(Varun) Using a for-range loop doesn't work since some of the
     // conditionals are invalid pointers
+
+    // First get all the keys involved.
+    // We do this by iterating over all conditionals, and checking if their
+    // frontals are involved in the factor graph. If yes, then also make the
+    // parent keys involved in the factor graph.
+    for (size_t i = 0; i < hybridBayesNet.size(); i++) {
+      auto conditional = hybridBayesNet.at(i);
+
+      for (auto &key : conditional->frontals()) {
+        // GTSAM_PRINT(*std::dynamic_pointer_cast<HybridConditional::BaseConditional>(conditional));
+        // GTSAM_PRINT(*conditional);
+        if (std::find(factorKeys.begin(), factorKeys.end(), key) !=
+            factorKeys.end()) {
+          // Add the conditional parents to factorKeys
+          // so we add those conditionals too.
+          for (auto &&parentKey : conditional->parents()) {
+            factorKeys.insert(parentKey);
+          }
+          // Break so we don't add parents twice.
+          break;
+        }
+      }
+    }
+    PrintKeySet(factorKeys);
+
     for (size_t i = 0; i < hybridBayesNet.size(); i++) {
       auto conditional = hybridBayesNet.at(i);
 
@@ -115,14 +174,6 @@ HybridSmoother::addConditionals(const HybridGaussianFactorGraph &originalGraph,
         if (std::find(factorKeys.begin(), factorKeys.end(), key) !=
             factorKeys.end()) {
           newConditionals.push_back(conditional);
-
-          // Add the conditional parents to factorKeys
-          // so we add those conditionals too.
-          // NOTE: This assumes we have a structure where
-          // variables depend on those in the future.
-          for (auto &&parentKey : conditional->parents()) {
-            factorKeys.insert(parentKey);
-          }
 
           // Remove the conditional from the updated Bayes net
           auto it = find(updatedHybridBayesNet.begin(),
