@@ -133,6 +133,12 @@ HybridBayesNet HybridBayesNet::prune(
     if (auto hgc = conditional->asHybrid()) {
       // Prune the hybrid Gaussian conditional!
       auto prunedHybridGaussianConditional = hgc->prune(pruned);
+      if (!prunedHybridGaussianConditional) {
+        GTSAM_PRINT(marginal);
+        GTSAM_PRINT(pruned);
+        throw std::runtime_error(
+            "A HybridGaussianConditional had all its conditionals pruned");
+      }
 
       if (deadModeThreshold.has_value()) {
         KeyVector deadKeys, conditionalDiscreteKeys;
