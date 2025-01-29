@@ -108,6 +108,28 @@ HybridSmoother::addConditionals(const HybridGaussianFactorGraph &originalGraph,
 
     // NOTE(Varun) Using a for-range loop doesn't work since some of the
     // conditionals are invalid pointers
+
+    // First get all the keys involved.
+    // We do this by iterating over all conditionals, and checking if their
+    // frontals are involved in the factor graph. If yes, then also make the
+    // parent keys involved in the factor graph.
+    for (size_t i = 0; i < hybridBayesNet.size(); i++) {
+      auto conditional = hybridBayesNet.at(i);
+
+      for (auto &key : conditional->frontals()) {
+        if (std::find(factorKeys.begin(), factorKeys.end(), key) !=
+            factorKeys.end()) {
+          // Add the conditional parents to factorKeys
+          // so we add those conditionals too.
+          for (auto &&parentKey : conditional->parents()) {
+            factorKeys.insert(parentKey);
+          }
+          // Break so we don't add parents twice.
+          break;
+        }
+      }
+    }
+
     for (size_t i = 0; i < hybridBayesNet.size(); i++) {
       auto conditional = hybridBayesNet.at(i);
 
@@ -115,14 +137,6 @@ HybridSmoother::addConditionals(const HybridGaussianFactorGraph &originalGraph,
         if (std::find(factorKeys.begin(), factorKeys.end(), key) !=
             factorKeys.end()) {
           newConditionals.push_back(conditional);
-
-          // Add the conditional parents to factorKeys
-          // so we add those conditionals too.
-          // NOTE: This assumes we have a structure where
-          // variables depend on those in the future.
-          for (auto &&parentKey : conditional->parents()) {
-            factorKeys.insert(parentKey);
-          }
 
           // Remove the conditional from the updated Bayes net
           auto it = find(updatedHybridBayesNet.begin(),
