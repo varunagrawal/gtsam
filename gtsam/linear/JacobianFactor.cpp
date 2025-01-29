@@ -580,16 +580,19 @@ void JacobianFactor::updateHessian(const KeyVector& infoKeys,
     // Ab_ is the augmented Jacobian matrix A, and we perform I += A'*A below
     DenseIndex n = Ab_.nBlocks() - 1, N = info->nBlocks() - 1;
 
+    // Pre-calculate slots
+    vector<DenseIndex> slots(n + 1);
+    for (DenseIndex j = 0; j < n; ++j) slots[j] = Slot(infoKeys, keys_[j]);
+    slots[n] = N;
+
     // Apply updates to the upper triangle
     // Loop over blocks of A, including RHS with j==n
-    vector<DenseIndex> slots(n+1);
     for (DenseIndex j = 0; j <= n; ++j) {
       Eigen::Block<const Matrix> Ab_j = Ab_(j);
-      const DenseIndex J = (j == n) ? N : Slot(infoKeys, keys_[j]);
-      slots[j] = J;
+      const DenseIndex J = slots[j];
       // Fill off-diagonal blocks with Ai'*Aj
       for (DenseIndex i = 0; i < j; ++i) {
-        const DenseIndex I = slots[i];  // because i<j, slots[i] is valid.
+        const DenseIndex I = slots[i];
         info->updateOffDiagonalBlock(I, J, Ab_(i).transpose() * Ab_j);
       }
       // Fill diagonal block with Aj'*Aj

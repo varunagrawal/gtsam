@@ -348,28 +348,26 @@ double HessianFactor::error(const VectorValues& c) const {
 /* ************************************************************************* */
 void HessianFactor::updateHessian(const KeyVector& infoKeys,
                                   SymmetricBlockMatrix* info) const {
-  gttic(updateHessian_HessianFactor);
   assert(info);
-  // Apply updates to the upper triangle
-  DenseIndex nrVariablesInThisFactor = size(), nrBlocksInInfo = info->nBlocks() - 1;
+  gttic(updateHessian_HessianFactor);
+  const DenseIndex nrVariablesInThisFactor = size();
+
   vector<DenseIndex> slots(nrVariablesInThisFactor + 1);
+  for (DenseIndex j = 0; j < nrVariablesInThisFactor; ++j)
+    slots[j] = Slot(infoKeys, keys_[j]);
+  slots[nrVariablesInThisFactor] = info->nBlocks() - 1;
+
+  // Apply updates to the upper triangle
   // Loop over this factor's blocks with indices (i,j)
   // For every block (i,j), we determine the block (I,J) in info.
   for (DenseIndex j = 0; j <= nrVariablesInThisFactor; ++j) {
-    const bool rhs = (j == nrVariablesInThisFactor);
-    const DenseIndex J = rhs ? nrBlocksInInfo : Slot(infoKeys, keys_[j]);
-    slots[j] = J;
-    for (DenseIndex i = 0; i <= j; ++i) {
-      const DenseIndex I = slots[i];  // because i<=j, slots[i] is valid.
-
-      if (i == j) {
-        assert(I == J);
-        info->updateDiagonalBlock(I, info_.diagonalBlock(i));
-      } else {
-        assert(i < j);
-        assert(I != J);
-        info->updateOffDiagonalBlock(I, J, info_.aboveDiagonalBlock(i, j));
-      }
+    const DenseIndex J = slots[j];
+    info->updateDiagonalBlock(J, info_.diagonalBlock(j));
+    for (DenseIndex i = 0; i < j; ++i) {
+      const DenseIndex I = slots[i];
+      assert(i < j);
+      assert(I != J);
+      info->updateOffDiagonalBlock(I, J, info_.aboveDiagonalBlock(i, j));
     }
   }
 }
