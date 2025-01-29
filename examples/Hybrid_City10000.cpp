@@ -43,7 +43,7 @@ using symbol_shorthand::L;
 using symbol_shorthand::M;
 using symbol_shorthand::X;
 
-const size_t kMaxLoopCount = 3000;  // Example default value
+const size_t kMaxLoopCount = 2000;  // Example default value
 
 auto kPriorNoiseModel = noiseModel::Diagonal::Sigmas(
     (Vector(3) << 0.0001, 0.0001, 0.0001).finished());
@@ -123,8 +123,8 @@ class Experiment {
     HybridGaussianFactorGraph linearized = *graph.linearize(initial);
     smoother.update(linearized, maxNrHypotheses);
     graph.resize(0);
-    HybridValues delta = smoother.hybridBayesNet().optimize();
-    result->insert_or_assign(initial.retract(delta.continuous()));
+    // HybridValues delta = smoother.hybridBayesNet().optimize();
+    // result->insert_or_assign(initial.retract(delta.continuous()));
   }
 
  public:
@@ -202,6 +202,7 @@ class Experiment {
           graph_.push_back(mixtureFactor);
           discreteCount++;
           doSmootherUpdate = true;
+          std::cout << "mixtureFactor: " << keyS << " " << keyT << std::endl;
         } else {
           graph_.add(BetweenFactor<Pose2>(X(keyS), X(keyT), odomPose,
                                           kPoseNoiseModel));
@@ -212,6 +213,8 @@ class Experiment {
         // Loop closure
         HybridNonlinearFactor loopFactor =
             hybridLoopClosureFactor(loopCount, keyS, keyT, odomPose);
+        // print loop closure event keys:
+        std::cout << "Loop closure: " << keyS << " " << keyT << std::endl;
         graph_.add(loopFactor);
         doSmootherUpdate = true;
         loopCount++;
@@ -224,6 +227,7 @@ class Experiment {
         afterUpdate = clock();
         smootherUpdateTimes.push_back({index, afterUpdate - beforeUpdate});
         gttoc_(SmootherUpdate);
+        doSmootherUpdate = false;
       }
 
       // Record timing for odometry edges only
@@ -238,9 +242,9 @@ class Experiment {
         if (!timeList.empty()) {
           std::cout << "Acc_time: " << timeList.back() / CLOCKS_PER_SEC
                     << " seconds" << std::endl;
-        // delta.discrete().print("The Discrete Assignment");
-        tictoc_finishedIteration_();
-        tictoc_print_();
+          // delta.discrete().print("The Discrete Assignment");
+          tictoc_finishedIteration_();
+          tictoc_print_();
         }
       }
 
@@ -297,9 +301,10 @@ int main() {
   Experiment experiment(findExampleDataFile("T1_city10000_04.txt"));
   // Experiment experiment("../data/mh_T1_city10000_04.txt"); //Type #1 only
   // Experiment experiment("../data/mh_T3b_city10000_10.txt"); //Type #3 only
-  // Experiment experiment("../data/mh_T1_T3_city10000_04.txt"); //Type #1 + Type #3
+  // Experiment experiment("../data/mh_T1_T3_city10000_04.txt"); //Type #1 +
+  // Type #3
 
-  // Run the experiment 
+  // Run the experiment
   experiment.run(kMaxLoopCount);
 
   return 0;
