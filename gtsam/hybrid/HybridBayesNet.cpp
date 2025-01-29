@@ -96,28 +96,11 @@ HybridBayesNet HybridBayesNet::prune(
     // Remove the modes (imperative)
     pruned.removeDiscreteModes(deadModesValues);
 
-    /*
-      If the pruned discrete conditional has any keys left,
-      we add it to the HybridBayesNet.
-      If not, it means it is an orphan so we don't add this pruned joint,
-      and instead add only the marginals below.
-    */
-    if (pruned.keys().size() > 0) {
-      result.emplace_shared<DiscreteConditional>(pruned);
-    }
-
-    // Add the marginals for future factors
-    for (auto &&[key, _] : deadModesValues) {
-      result.push_back(
-          std::dynamic_pointer_cast<DiscreteConditional>(marginals(key)));
-    }
+    GTSAM_PRINT(deadModesValues);
 
 #if GTSAM_HYBRID_TIMING
     gttoc_(DeadModeRemoval);
 #endif
-
-  } else {
-    result.emplace_shared<DiscreteConditional>(pruned);
   }
 
   /* To prune, we visitWith every leaf in the HybridGaussianConditional.
@@ -141,18 +124,29 @@ HybridBayesNet HybridBayesNet::prune(
       }
 
       if (deadModeThreshold.has_value()) {
-        KeyVector deadKeys, conditionalDiscreteKeys;
-        for (const auto &kv : deadModesValues) {
-          deadKeys.push_back(kv.first);
+        const auto &discreteParents =
+            prunedHybridGaussianConditional->discreteKeys();
+        DiscreteValues deadParentValues;
+        DiscreteKeys liveParents;
+        for (const auto &key : discreteParents) {
+          auto it = deadModesValues.find(key.first);
+          if (it != deadModesValues.end())
+            deadParentValues[key.first] = it->second;
+          else
+            liveParents.emplace_back(key);
         }
-        for (auto dkey : prunedHybridGaussianConditional->discreteKeys()) {
-          conditionalDiscreteKeys.push_back(dkey.first);
-        }
-        // The discrete keys in the conditional are the same as the keys in the
-        // dead modes, then we just get the corresponding Gaussian conditional.
-        if (deadKeys == conditionalDiscreteKeys) {
+        // If so then we just get the corresponding Gaussian conditional:
+        if (deadParentValues.size() == discreteParents.size()) {
+          // print on how many discreteParents we are choosing:
           result.push_back(
-              prunedHybridGaussianConditional->choose(deadModesValues));
+              prunedHybridGaussianConditional->choose(deadParentValues));
+        } else if (liveParents.size() > 0) {
+          auto newTree = prunedHybridGaussianConditional->factors();
+          for (auto &&[key, value] : deadModesValues) {
+            newTree = newTree.choose(key, value);
+          }
+          result.emplace_shared<HybridGaussianConditional>(liveParents,
+                                                           newTree);
         } else {
           // Add as-is
           result.push_back(prunedHybridGaussianConditional);
@@ -172,6 +166,27 @@ HybridBayesNet HybridBayesNet::prune(
 #if GTSAM_HYBRID_TIMING
   gttoc_(HybridPruning);
 #endif
+
+  if (deadModeThreshold.has_value()) {
+    /*
+      If the pruned discrete conditional has any keys left,
+      we add it to the HybridBayesNet.
+      If not, it means it is an orphan so we don't add this pruned joint,
+      and instead add only the marginals below.
+    */
+    if (pruned.keys().size() > 0) {
+      result.emplace_shared<DiscreteConditional>(pruned);
+    }
+
+    // Add the marginals for future factors
+    // for (auto &&[key, _] : deadModesValues) {
+    //   result.push_back(
+    //       std::dynamic_pointer_cast<DiscreteConditional>(marginals(key)));
+    // }
+
+  } else {
+    result.emplace_shared<DiscreteConditional>(pruned);
+  }
 
   return result;
 }
